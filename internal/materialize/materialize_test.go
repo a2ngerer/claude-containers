@@ -87,6 +87,51 @@ func TestMaterialize_AllowlistOnly(t *testing.T) {
 	require.Equal(t, "# reviewer\nUncontaminated.\n", string(md))
 }
 
+// C1 — symlink leak: a file symlink inside an allowlisted skill must make
+// Materialize fail closed instead of following it and copying host content
+// (or smuggling an executable skill) into the isolated config dir.
+func TestMaterialize_SkillSymlinkRejected(t *testing.T) {
+	e := seedRepo(t, "reviewer")
+	rm := reviewerManifest()
+
+	// Plant a symlink inside the allowlisted skill pointing at a host secret.
+	pdir := filepath.Join(environment.RepoDir(e.Hash), "personas", "reviewer")
+	secret := filepath.Join(t.TempDir(), "host-secret")
+	require.NoError(t, os.WriteFile(secret, []byte("TOP SECRET"), 0o600))
+	link := filepath.Join(pdir, "skills", "security-review", "leak.txt")
+	require.NoError(t, os.Symlink(secret, link))
+
+	dest := filepath.Join(t.TempDir(), "cfg")
+	err := Materialize(e, rm, dest)
+	require.Error(t, err, "symlink in persona skill must be rejected fail-closed")
+	require.Contains(t, err.Error(), "symlink not allowed")
+}
+
+// C2 — path traversal: a skill/subagent name from the untrusted manifest that
+// escapes its target dir (e.g. "../evil") must be rejected before any
+// filepath.Join, so nothing is written outside destDir.
+func TestMaterialize_TraversalSkillNameRejected(t *testing.T) {
+	e := seedRepo(t, "reviewer")
+	rm := reviewerManifest()
+	rm.Skills = []string{"../evil"}
+
+	dest := filepath.Join(t.TempDir(), "cfg")
+	err := Materialize(e, rm, dest)
+	require.Error(t, err, "skill name escaping destDir must be rejected")
+	require.Contains(t, err.Error(), "invalid persona component name")
+}
+
+func TestMaterialize_TraversalSubagentNameRejected(t *testing.T) {
+	e := seedRepo(t, "reviewer")
+	rm := reviewerManifest()
+	rm.Subagents = []string{"../../evil"}
+
+	dest := filepath.Join(t.TempDir(), "cfg")
+	err := Materialize(e, rm, dest)
+	require.Error(t, err, "subagent name escaping destDir must be rejected")
+	require.Contains(t, err.Error(), "invalid persona component name")
+}
+
 func TestMaterialize_Idempotent(t *testing.T) {
 	e := seedRepo(t, "reviewer")
 	rm := reviewerManifest()

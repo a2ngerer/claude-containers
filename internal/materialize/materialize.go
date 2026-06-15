@@ -3,6 +3,7 @@ package materialize
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -54,6 +55,9 @@ func Materialize(e *environment.Environment, rm compose.ResolvedManifest, destDi
 // promised it).
 func copySkills(personaDir, destDir string, skills []string) error {
 	for _, name := range skills {
+		if !filepath.IsLocal(name) {
+			return fmt.Errorf("invalid persona component name: %q", name)
+		}
 		src := filepath.Join(personaDir, "skills", name)
 		dst := filepath.Join(destDir, "skills", name)
 		if err := copyTree(src, dst); err != nil {
@@ -73,6 +77,9 @@ func copySubagents(personaDir, destDir string, subagents []string) error {
 		return fmt.Errorf("create agents dir: %w", err)
 	}
 	for _, name := range subagents {
+		if !filepath.IsLocal(name) {
+			return fmt.Errorf("invalid persona component name: %q", name)
+		}
 		src := filepath.Join(personaDir, "agents", name+".md")
 		dst := filepath.Join(destDir, "agents", name+".md")
 		if err := copyFile(src, dst); err != nil {
@@ -85,26 +92,48 @@ func copySubagents(personaDir, destDir string, subagents []string) error {
 // copyTree recursively copies the directory at src into dst, preserving the
 // relative structure. File mode is normalized (0644 files, 0755 dirs) so two
 // materializations are byte/metadata identical.
+//
+// Persona content is untrusted: only regular files and directories are copied.
+// Any symlink (or other irregular entry) is rejected fail-closed so a persona
+// cannot leak host files or smuggle an executable skill through a link.
 func copyTree(src, dst string) error {
-	return filepath.Walk(src, func(p string, info os.FileInfo, err error) error {
+	return filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		if d.Type()&fs.ModeSymlink != 0 {
+			return fmt.Errorf("symlink not allowed in persona: %s", p)
 		}
 		rel, err := filepath.Rel(src, p)
 		if err != nil {
 			return err
 		}
 		target := filepath.Join(dst, rel)
-		if info.IsDir() {
+		if d.IsDir() {
 			return os.MkdirAll(target, 0o755)
+		}
+		if !d.Type().IsRegular() {
+			return fmt.Errorf("irregular file not allowed in persona: %s", p)
 		}
 		return copyFile(p, target)
 	})
 }
 
 // copyFile copies a single regular file, creating parent dirs as needed and
-// normalizing the mode to 0644.
+// normalizing the mode to 0644. The source is lstat-checked first so a symlink
+// (which os.Open would silently follow) is rejected fail-closed; this also
+// guards the subagent path, which is copied directly without walking a tree.
 func copyFile(src, dst string) error {
+	fi, err := os.Lstat(src)
+	if err != nil {
+		return err
+	}
+	if fi.Mode()&fs.ModeSymlink != 0 {
+		return fmt.Errorf("symlink not allowed in persona: %s", src)
+	}
+	if !fi.Mode().IsRegular() {
+		return fmt.Errorf("irregular file not allowed in persona: %s", src)
+	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}
