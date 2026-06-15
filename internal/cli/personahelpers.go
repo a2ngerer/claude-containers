@@ -259,6 +259,27 @@ func formatCapabilityDiff(d compose.CapabilityDiff) string {
 	return b.String()
 }
 
+// resolveSnapshotRef resolves ref (a short/full snapshot id or a version tag)
+// to a concrete SnapshotID within a persona's history.
+func resolveSnapshotRef(e *environment.Environment, persona, ref string) (domain.SnapshotID, error) {
+	// try version tag first
+	if id, err := e.Store.ResolveTag(persona, ref); err == nil {
+		return id, nil
+	}
+	// fall back to (short) id match against the timeline
+	ids, err := e.Store.Timeline(persona)
+	if err != nil {
+		return "", fmt.Errorf("timeline for %q: %w", persona, err)
+	}
+	for _, id := range ids {
+		s := string(id)
+		if s == ref || strings.HasPrefix(s, ref) {
+			return id, nil
+		}
+	}
+	return "", fmt.Errorf("snapshot or version %q not found for persona %q", ref, persona)
+}
+
 // scaffoldPersona materializes a persona template into personas/<name>/ in the
 // repo. The persona's name is forced to `name`. Refuses to overwrite.
 func scaffoldPersona(e *environment.Environment, name string, sc personaScaffold) error {

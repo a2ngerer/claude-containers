@@ -2,6 +2,8 @@ package cli
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/angerer/claude_git/internal/domain"
@@ -134,4 +136,52 @@ func TestDiffCmd_CapabilityDelta(t *testing.T) {
 	require.Contains(t, out, "reviewer")
 	require.Contains(t, out, "security-review") // only in reviewer
 	require.Contains(t, out, "Write")           // allow-only-in-coder OR deny-only-in-reviewer
+}
+
+func runRollback(t *testing.T, env *environment.Environment, args ...string) (string, error) {
+	t.Helper()
+	cmd := newRollbackCmd(func() (*environment.Environment, error) { return env, nil })
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+func TestRollbackCmd_RestoresPriorTree(t *testing.T) {
+	env := newVerTestEnv(t)
+	_, err := runNew(t, env, "coder", "--template", "coder")
+	require.NoError(t, err)
+
+	// snapshot v1 with a marker file
+	mdPath := filepath.Join(environment.RepoDir(env.Hash), "personas", "coder", "CLAUDE.md")
+	require.NoError(t, os.WriteFile(mdPath, []byte("V1"), 0o644))
+	_, err = runSnapshot(t, env, "coder", "-m", "v1")
+	require.NoError(t, err)
+	ids, err := env.Store.Timeline("coder")
+	require.NoError(t, err)
+	v1 := shortID(string(ids[0]))
+
+	// change the file and snapshot v2
+	require.NoError(t, os.WriteFile(mdPath, []byte("V2"), 0o644))
+	_, err = runSnapshot(t, env, "coder", "-m", "v2")
+	require.NoError(t, err)
+
+	// rollback to v1
+	_, err = runRollback(t, env, "coder", v1)
+	require.NoError(t, err)
+
+	// the working persona dir now holds V1 again
+	got, err := os.ReadFile(mdPath)
+	require.NoError(t, err)
+	require.Equal(t, "V1", string(got))
+
+	// a new "rollback to" snapshot was appended (now 3 total)
+	ids, err = env.Store.Timeline("coder")
+	require.NoError(t, err)
+	require.Len(t, ids, 3)
+	top, err := env.Store.ReadSnapshot(ids[0])
+	require.NoError(t, err)
+	require.Contains(t, top.Message, "rollback to")
 }

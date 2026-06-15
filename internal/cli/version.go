@@ -2,10 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"github.com/angerer/claude_git/internal/compose"
+	"github.com/angerer/claude_git/internal/environment"
+	"github.com/angerer/claude_git/internal/storage"
 )
 
 // newSnapshotCmd builds the `snapshot` command (alias `commit`).
@@ -95,6 +98,43 @@ func newDiffCmd(open envOpener) *cobra.Command {
 				return err
 			}
 			fmt.Fprint(cmd.OutOrStdout(), formatCapabilityDiff(compose.Diff(a, b)))
+			return nil
+		},
+	}
+}
+
+// domainObjectID converts a stored tree id string to a storage.ObjectID.
+func domainObjectID(treeID string) storage.ObjectID { return storage.ObjectID(treeID) }
+
+// newRollbackCmd builds the `rollback` command.
+func newRollbackCmd(open envOpener) *cobra.Command {
+	return &cobra.Command{
+		Use:   "rollback <persona> <snapshot|version>",
+		Short: "Restore a persona to a prior snapshot, recording a new snapshot",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			env, err := open()
+			if err != nil {
+				return err
+			}
+			persona, ref := args[0], args[1]
+			target, err := resolveSnapshotRef(env, persona, ref)
+			if err != nil {
+				return err
+			}
+			snap, err := env.Store.ReadSnapshot(target)
+			if err != nil {
+				return err
+			}
+			dir := filepath.Join(environment.RepoDir(env.Hash), "personas", persona)
+			if err := env.Store.CheckoutTree(domainObjectID(snap.TreeID), dir); err != nil {
+				return fmt.Errorf("checkout tree: %w", err)
+			}
+			id, err := takeSnapshot(env, persona, "rollback to "+ref)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Rolled back %q to %s (new snapshot %s)\n", persona, ref, shortID(string(id)))
 			return nil
 		},
 	}
