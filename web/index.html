@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Containers — Docker for your Claude Code agents</title>
+<meta name="description" content="Version, swap, and share the CLAUDE.md + .claude/ config layer that shapes how your Claude Code agent thinks — as isolated, named personas. The uncontaminated reviewer is enforced, not promised." />
+<meta property="og:title" content="Claude Containers" />
+<meta property="og:description" content="Docker for your Claude Code agents. Version, swap, and share the config layer as isolated personas." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://claude_containers.alexanderangerer.com" />
+<meta name="theme-color" content="#0d0d0f" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0f'/%3E%3Cpath d='M9 11h14M9 16h14M9 21h9' stroke='%23d97757' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#0d0d0f; --bg-soft:#141417; --surface:#1a1a1f; --surface-2:#212128;
+  --text:#ece9e3; --dim:#8d8a82; --faint:#5b5953;
+  --accent:#d97757; --accent-bright:#ff9268; --accent-soft:rgba(217,119,87,.12);
+  --green:#86c79a; --red:#e0796b; --blue:#7fa6d9;
+  --line:rgba(236,233,227,.10); --line-soft:rgba(236,233,227,.055);
+  --mono:"Azeret Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --disp:"Archivo",system-ui,sans-serif;
+  --pad:clamp(1.15rem,4vw,3.5rem);
+  --radius:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--disp);
+  line-height:1.6;font-size:clamp(1rem,.96rem+.2vw,1.08rem);font-weight:400;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+::selection{background:var(--accent);color:#160b06}
+a{color:inherit;text-decoration:none}
+.mono{font-family:var(--mono);font-weight:500;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase}
+.wrap{width:min(1080px,100%);margin-inline:auto;padding-inline:var(--pad)}
+
+/* atmosphere */
+.glow{position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(620px 420px at 78% -8%,rgba(217,119,87,.16),transparent 70%),
+    radial-gradient(540px 420px at 8% 8%,rgba(127,166,217,.08),transparent 70%);}
+.grain{position:fixed;inset:-120%;z-index:-1;pointer-events:none;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 8s steps(8) infinite}
+@keyframes grain{0%,100%{transform:translate(0,0)}25%{transform:translate(-2%,1%)}50%{transform:translate(1%,-2%)}75%{transform:translate(-1%,-1%)}}
+
+/* nav */
+header{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+  background:rgba(13,13,15,.7);border-bottom:1px solid var(--line-soft)}
+nav{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:.6rem;font-family:var(--mono);font-weight:600;letter-spacing:.04em}
+.brand b{color:var(--accent)}
+.brand svg{display:block}
+.nav-links{display:flex;align-items:center;gap:1.6rem}
+.nav-links a{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{padding:.5rem .9rem;border:1px solid var(--line);border-radius:8px;color:var(--text)!important}
+.nav-cta:hover{border-color:var(--accent);background:var(--accent-soft)}
+@media(max-width:620px){.nav-links a.hide-sm{display:none}}
+
+/* hero */
+.hero{padding-top:clamp(3.5rem,9vh,6rem);padding-bottom:clamp(3rem,7vh,5rem)}
+.tagline-kicker{color:var(--accent);margin-bottom:1.4rem;display:inline-flex;gap:.6rem;align-items:center}
+.tagline-kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:blink 2.6s infinite}
+@keyframes blink{50%{opacity:.3}}
+h1{font-size:clamp(2.6rem,7.5vw,5rem);line-height:1.02;font-weight:800;letter-spacing:-.025em}
+h1 .grad{background:linear-gradient(120deg,var(--accent-bright),var(--accent) 55%,#b9603f);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin-top:1.5rem;font-size:clamp(1.1rem,1rem+.7vw,1.45rem);color:var(--text);max-width:40ch;font-weight:400}
+.lede em{font-style:normal;color:var(--accent)}
+.sub{margin-top:1rem;color:var(--dim);max-width:54ch}
+.cta-row{display:flex;flex-wrap:wrap;gap:.85rem;margin-top:2.2rem}
+.btn{display:inline-flex;align-items:center;gap:.55rem;padding:.8rem 1.3rem;border-radius:10px;
+  font-family:var(--mono);font-size:.8rem;font-weight:600;letter-spacing:.04em;transition:transform .15s,box-shadow .2s,background .2s,border-color .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:var(--accent);color:#160b06;box-shadow:0 8px 30px -10px var(--accent)}
+.btn-primary:hover{background:var(--accent-bright);box-shadow:0 12px 36px -8px var(--accent)}
+.btn-ghost{border:1px solid var(--line);color:var(--text)}
+.btn-ghost:hover{border-color:var(--accent);background:var(--accent-soft)}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(2rem,5vw,4rem);align-items:center}
+@media(max-width:860px){.hero-grid{grid-template-columns:1fr}}
+
+/* terminal */
+.term{background:linear-gradient(180deg,var(--surface),var(--bg-soft));border:1px solid var(--line);
+  border-radius:var(--radius);overflow:hidden;box-shadow:0 30px 80px -40px rgba(0,0,0,.8);font-family:var(--mono)}
+.term-bar{display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;border-bottom:1px solid var(--line-soft);background:rgba(0,0,0,.2)}
+.term-bar i{width:11px;height:11px;border-radius:50%;background:#3a3a40;display:block}
+.term-bar i:nth-child(1){background:#e0796b}.term-bar i:nth-child(2){background:#d9b97f}.term-bar i:nth-child(3){background:#86c79a}
+.term-bar span{margin-left:.6rem;color:var(--faint);font-size:.7rem;letter-spacing:.06em}
+.term-body{padding:1.1rem 1.2rem;font-size:.82rem;line-height:1.75;min-height:300px}
+.term-body .ln{white-space:pre-wrap;word-break:break-word}
+.term-body .pr{color:var(--accent)}
+.term-body .cmd{color:var(--text)}
+.term-body .out{color:var(--dim)}
+.term-body .ok{color:var(--green)}
+.term-body .no{color:var(--red)}
+.term-body .cur{display:inline-block;width:8px;height:1.05em;background:var(--accent);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+
+/* sections */
+section.block{padding-block:clamp(3.5rem,8vh,6rem);border-top:1px solid var(--line-soft)}
+.eyebrow{color:var(--accent);margin-bottom:1rem}
+h2{font-size:clamp(1.8rem,1.3rem+2vw,2.7rem);font-weight:700;letter-spacing:-.02em;line-height:1.1}
+h2 + .say{margin-top:1rem;color:var(--dim);max-width:60ch}
+.say em{font-style:normal;color:var(--text)}
+
+/* containers viz */
+.stage{margin-top:2.6rem;border:1px solid var(--line);border-radius:var(--radius);background:
+  repeating-linear-gradient(135deg,var(--line-soft) 0 1px,transparent 1px 14px),var(--bg-soft);padding:clamp(1.2rem,3vw,2.2rem)}
+.ws{text-align:center;font-family:var(--mono);font-size:.74rem;letter-spacing:.06em;color:var(--dim);
+  border:1px dashed var(--line);border-radius:10px;padding:.8rem;margin-bottom:1.5rem}
+.ws b{color:var(--text)}
+.swap{text-align:center;color:var(--accent);font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;margin-bottom:1.5rem}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+@media(max-width:760px){.cards{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1.2rem;position:relative;transition:transform .2s,border-color .2s}
+.card:hover{transform:translateY(-4px);border-color:var(--accent)}
+.card.is-base{border-color:var(--line)}
+.card.is-rev{border-color:rgba(217,119,87,.4)}
+.card h3{font-family:var(--mono);font-size:.92rem;letter-spacing:.02em;display:flex;align-items:center;gap:.5rem;margin-bottom:.85rem}
+.tagdot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.card.is-coder .tagdot{background:var(--blue)}
+.card.is-rev .tagdot{background:var(--accent)}
+.card ul{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+.card li{font-family:var(--mono);font-size:.72rem;letter-spacing:.02em;color:var(--dim);display:flex;gap:.5rem;align-items:flex-start}
+.card li .plus{color:var(--green)}.card li .minus{color:var(--red)}.card li .eq{color:var(--faint)}
+
+/* feature split */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1.6rem,4vw,3rem);align-items:center;margin-top:2.4rem}
+@media(max-width:840px){.split{grid-template-columns:1fr}}
+.attest{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.4rem;font-family:var(--mono);font-size:.8rem;line-height:1.85}
+.attest .h{color:var(--text)}.attest .ok{color:var(--green)}.attest .no{color:var(--red)}.attest .d{color:var(--dim)}
+.feat-points{list-style:none;display:flex;flex-direction:column;gap:1.1rem;margin-top:1.6rem}
+.feat-points li{display:flex;gap:.8rem;color:var(--dim)}
+.feat-points b{color:var(--text);font-weight:600}
+.feat-points .ic{flex:none;width:26px;height:26px;border-radius:7px;background:var(--accent-soft);color:var(--accent);
+  display:grid;place-items:center;font-family:var(--mono);font-size:.85rem;font-weight:700}
+
+/* quickstart */
+.steps{display:grid;gap:.9rem;margin-top:2.2rem}
+.code{position:relative;background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;
+  padding:.95rem 3rem .95rem 1.1rem;font-family:var(--mono);font-size:.8rem;line-height:1.7;overflow-x:auto;white-space:pre}
+.code .c{color:var(--faint)}
+.code .p{color:var(--accent)}
+.copy{position:absolute;top:.55rem;right:.55rem;border:1px solid var(--line);background:var(--surface);color:var(--dim);
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:.3rem .5rem;border-radius:6px;cursor:pointer;transition:.18s}
+.copy:hover{color:var(--text);border-color:var(--accent)}
+.copy.done{color:var(--green);border-color:var(--green)}
+
+/* commands */
+.cmd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.75rem;margin-top:2.2rem}
+.cmd-cell{border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;background:var(--surface);transition:border-color .2s,transform .2s}
+.cmd-cell:hover{border-color:var(--accent);transform:translateY(-2px)}
+.cmd-cell code{font-family:var(--mono);color:var(--accent);font-size:.78rem;font-weight:600}
+.cmd-cell p{margin-top:.35rem;color:var(--dim);font-size:.85rem;line-height:1.45}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
+.foot-grid{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1.5rem;align-items:center}
+.foot-links{display:flex;gap:1.4rem;flex-wrap:wrap}
+.foot-links a{font-family:var(--mono);font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.foot-links a:hover{color:var(--accent)}
+.foot-note{color:var(--faint);font-family:var(--mono);font-size:.7rem;letter-spacing:.04em;margin-top:1.4rem;line-height:1.7}
+
+@media(prefers-reduced-motion:reduce){.grain{animation:none}.dot,.cur{animation:none}}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="grain"></div>
+
+<header>
+  <nav class="wrap">
+    <a class="brand" href="#top">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1a1a1f"/><path d="M9 11h14M9 16h14M9 21h9" stroke="#d97757" stroke-width="2.4" stroke-linecap="round"/></svg>
+      claude<b>_</b>containers
+    </a>
+    <div class="nav-links">
+      <a href="#why" class="hide-sm">Why</a>
+      <a href="#reviewer" class="hide-sm">Reviewer</a>
+      <a href="#start" class="hide-sm">Quickstart</a>
+      <a href="https://github.com/a2ngerer/claude-containers" class="nav-cta" target="_blank" rel="noopener">GitHub →</a>
+    </div>
+  </nav>
+</header>
+
+<main id="top">
+<section class="hero wrap">
+  <div class="hero-grid">
+    <div>
+      <div class="tagline-kicker mono"><span class="dot"></span> Docker for your Claude Code agents</div>
+      <h1>One workspace.<br /><span class="grad">Many agents.</span></h1>
+      <p class="lede">Version, swap, and share the config layer that shapes how your agent thinks — <em>CLAUDE.md plus .claude/</em> — as isolated, named personas.</p>
+      <p class="sub">Skills, subagents, MCP servers and permissions live as one global blob today. Claude Containers turns them into containers you swap per task, snapshot like code, and hand to your team.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#start">Get started</a>
+        <a class="btn btn-ghost" href="https://github.com/a2ngerer/claude-containers" target="_blank" rel="noopener">View on GitHub</a>
+      </div>
+    </div>
+    <div class="term" id="term" aria-hidden="true">
+      <div class="term-bar"><i></i><i></i><i></i><span>~/project — claude_git</span></div>
+      <div class="term-body" id="termBody"></div>
+    </div>
+  </div>
+</section>
+
+<section class="block wrap" id="why">
+  <div class="eyebrow mono">The problem</div>
+  <h2>Your agent is its config — and it is one global blob.</h2>
+  <p class="say">Claude Code's behaviour is not just the model. It is everything in <em>CLAUDE.md</em> and <em>.claude/</em>: the skills it can call, the subagents it can spawn, the MCP servers it reaches, the permissions it holds. You can't cleanly swap a coder loaded with build skills for a reviewer that deliberately lacks them. You can't version those setups. You can't hand them to a teammate.</p>
+
+  <div class="stage">
+    <div class="ws">your workspace &mdash; <b>.claude/ is never touched</b></div>
+    <div class="swap mono">▲ claude_git use &nbsp;swaps the active container ▲</div>
+    <div class="cards">
+      <div class="card is-base">
+        <h3><span class="tagdot"></span>_base</h3>
+        <ul><li><span class="eq">=</span> shared baseline</li><li><span class="eq">=</span> imported from your .claude/</li><li><span class="eq">=</span> every persona layers on it</li></ul>
+      </div>
+      <div class="card is-coder">
+        <h3><span class="tagdot"></span>coder</h3>
+        <ul><li><span class="plus">+</span> build / codegen skills</li><li><span class="plus">+</span> refactor subagents</li><li><span class="eq">·</span> write: allowed</li></ul>
+      </div>
+      <div class="card is-rev">
+        <h3><span class="tagdot"></span>reviewer</h3>
+        <ul><li><span class="minus">−</span> no build skills</li><li><span class="minus">−</span> write: denied</li><li><span class="eq">·</span> read-only, by design</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block wrap" id="reviewer">
+  <div class="eyebrow mono">The killer feature</div>
+  <h2>An uncontaminated reviewer.</h2>
+  <p class="say">If the same agent that wrote the code also reviews it, its judgment is shaped by the very skills and habits that produced the bug. Claude Containers builds a reviewer that is <em>provably stripped</em> of the coder's powers — and then attests it.</p>
+  <div class="split">
+    <div class="attest">
+      <div class="d">$ claude_git verify reviewer</div>
+      <div>&nbsp;</div>
+      <div class="h">Persona: reviewer  (<span class="ok">uncontaminated</span>)</div>
+      <div class="d">  Skills:   code-review, security-audit</div>
+      <div class="d">  Withheld  skills [<span class="no">build, codegen, refactor</span>]</div>
+      <div class="d">            (deliberately removed)</div>
+      <div class="d">  Denied:   <span class="no">Write, Edit, NotebookEdit</span></div>
+      <div class="d">  Settings: user+project</div>
+    </div>
+    <div>
+      <ul class="feat-points">
+        <li><span class="ic">▼</span><div><b>Enforced, not advisory.</b> Write tools are blocked through <span class="mono" style="text-transform:none;color:var(--accent)">permissions.deny</span>; only allow-listed skills are materialized.</div></li>
+        <li><span class="ic">◆</span><div><b>Physically absent.</b> Withheld skills aren't hidden — they never reach the agent's config dir at all.</div></li>
+        <li><span class="ic">✓</span><div><b>Drift-checked.</b> <span class="mono" style="text-transform:none;color:var(--accent)">verify</span> fails loudly if the materialized environment ever diverges from the manifest.</div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="block wrap" id="start">
+  <div class="eyebrow mono">Quickstart</div>
+  <h2>Up and running in four commands.</h2>
+  <p class="say">Requires Go 1.26+. The CLI is named <em>claude_git</em> — git for your Claude config.</p>
+  <div class="steps">
+    <div class="code"><button class="copy" type="button">copy</button><span class="c"># install the CLI</span>
+go install github.com/a2ngerer/claude-containers/cmd/claude_git@latest</div>
+    <div class="code"><button class="copy" type="button">copy</button><span class="c"># bind this workspace — seeds _base from your existing .claude/ + CLAUDE.md</span>
+claude_git init</div>
+    <div class="code"><button class="copy" type="button">copy</button><span class="c"># scaffold specialized containers from embedded templates</span>
+claude_git new coder    <span class="p">--template</span> coder
+claude_git new reviewer <span class="p">--template</span> reviewer</div>
+    <div class="code"><button class="copy" type="button">copy</button><span class="c"># swap the active agent for the task at hand</span>
+claude_git use reviewer</div>
+  </div>
+</section>
+
+<section class="block wrap" id="commands">
+  <div class="eyebrow mono">Command reference</div>
+  <h2>Everything is one verb away.</h2>
+  <div class="cmd-grid">
+    <div class="cmd-cell"><code>init [--from]</code><p>Bind the workspace; seed _base or clone a shared repo.</p></div>
+    <div class="cmd-cell"><code>new --template</code><p>Scaffold a persona from coder / reviewer templates.</p></div>
+    <div class="cmd-cell"><code>use / deactivate</code><p>Activate a persona, or clear the active one.</p></div>
+    <div class="cmd-cell"><code>snapshot</code><p>Record an immutable snapshot of a persona.</p></div>
+    <div class="cmd-cell"><code>log / diff</code><p>History, and the capability delta between two personas.</p></div>
+    <div class="cmd-cell"><code>tag / rollback</code><p>SemVer-tag a snapshot, or restore a prior state.</p></div>
+    <div class="cmd-cell"><code>push / pull / clone</code><p>Share over git — secret-scanned before every push.</p></div>
+    <div class="cmd-cell"><code>verify</code><p>Re-attest the materialized env matches the manifest.</p></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <a class="brand" href="#top">
+        <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1a1a1f"/><path d="M9 11h14M9 16h14M9 21h9" stroke="#d97757" stroke-width="2.4" stroke-linecap="round"/></svg>
+        claude<b>_</b>containers
+      </a>
+      <div class="foot-links">
+        <a href="https://github.com/a2ngerer/claude-containers" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/a2ngerer/claude-containers#readme" target="_blank" rel="noopener">Docs</a>
+        <a href="https://github.com/a2ngerer/claude-containers/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+        <a href="https://alexanderangerer.com" target="_blank" rel="noopener">Author</a>
+      </div>
+    </div>
+    <p class="foot-note">Open source under the MIT License. Built in Go by Alexander Angerer.<br />The uncontaminated reviewer is enforced, not promised.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // hero terminal typing
+  var lines=[
+    {t:"$ ",c:"claude_git use coder",cls:"cmd"},
+    {t:"",c:"Persona: coder  (build + codegen skills)",cls:"out"},
+    {t:"",c:"→ CLAUDE_CONFIG_DIR=~/.claude_git/cache/coder claude",cls:"out"},
+    {t:"",c:"",cls:"out"},
+    {t:"$ ",c:"claude_git use reviewer",cls:"cmd"},
+    {t:"",c:"Persona: reviewer  (uncontaminated)",cls:"ok"},
+    {t:"",c:"  Withheld  skills [build, codegen]  (removed)",cls:"out"},
+    {t:"",c:"  Denied:   Write, Edit, NotebookEdit",cls:"no"},
+    {t:"",c:"",cls:"out"},
+    {t:"$ ",c:"claude_git push origin",cls:"cmd"},
+    {t:"",c:"scanning for secrets… clean. pushed 3 personas.",cls:"ok"}
+  ];
+  var body=document.getElementById("termBody");
+  if(!body) return;
+  var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function renderAll(){
+    body.innerHTML="";
+    lines.forEach(function(l){
+      var d=document.createElement("div");d.className="ln";
+      d.innerHTML='<span class="pr">'+l.t+'</span><span class="'+l.cls+'">'+esc(l.c)+'</span>';
+      body.appendChild(d);
+    });
+  }
+  if(reduce){renderAll();return;}
+  var li=0;
+  function typeLine(){
+    if(li>=lines.length){
+      var c=document.createElement("span");c.className="cur";body.appendChild(c);return;
+    }
+    var l=lines[li];
+    var d=document.createElement("div");d.className="ln";
+    var pr='<span class="pr">'+l.t+'</span>';
+    var span=document.createElement("span");span.className=l.cls;
+    d.innerHTML=pr;d.appendChild(span);body.appendChild(d);
+    var i=0,txt=l.c;
+    if(txt===""){li++;setTimeout(typeLine,160);return;}
+    (function ch(){
+      span.textContent=txt.slice(0,i);
+      i++;
+      if(i<=txt.length){setTimeout(ch, l.cls==="cmd"?34:8);}
+      else{li++;setTimeout(typeLine, l.cls==="cmd"?420:120);}
+    })();
+  }
+  body.scrollTop=0;
+  setTimeout(typeLine,500);
+
+  // copy buttons
+  document.querySelectorAll(".copy").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var code=btn.parentElement.cloneNode(true);
+      var b=code.querySelector(".copy"); if(b) b.remove();
+      var text=code.textContent.replace(/\n+$/,"");
+      navigator.clipboard.writeText(text).then(function(){
+        btn.textContent="copied";btn.classList.add("done");
+        setTimeout(function(){btn.textContent="copy";btn.classList.remove("done");},1400);
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
