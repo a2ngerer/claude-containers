@@ -126,6 +126,25 @@ func execLaunch(spec activate.LaunchSpec) error {
 	if err != nil {
 		return fmt.Errorf("claude not found on PATH: %w", err)
 	}
-	env := append(os.Environ(), spec.Env...)
+	env := mergeEnv(os.Environ(), spec.Env)
 	return syscall.Exec(path, spec.Argv, env)
+}
+
+// mergeEnv combines base and overrides so that keys present in overrides
+// shadow any matching keys from base. Order within each slice is preserved.
+func mergeEnv(base, overrides []string) []string {
+	overrideKeys := map[string]bool{}
+	for _, kv := range overrides {
+		if i := strings.IndexByte(kv, '='); i >= 0 {
+			overrideKeys[kv[:i]] = true
+		}
+	}
+	out := make([]string, 0, len(base)+len(overrides))
+	for _, kv := range base {
+		if i := strings.IndexByte(kv, '='); i >= 0 && overrideKeys[kv[:i]] {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return append(out, overrides...)
 }

@@ -64,3 +64,41 @@ func TestIsReserved(t *testing.T) {
 	require.False(t, isReserved("reviewer"))
 	require.False(t, isReserved("coder"))
 }
+
+func TestMergeEnv(t *testing.T) {
+	t.Run("override wins over base for same key", func(t *testing.T) {
+		base := []string{"CLAUDE_CONFIG_DIR=/old", "HOME=/home/user"}
+		overrides := []string{"CLAUDE_CONFIG_DIR=/new"}
+		got := mergeEnv(base, overrides)
+		// exactly one CLAUDE_CONFIG_DIR entry, value must be /new
+		var matches []string
+		for _, kv := range got {
+			if len(kv) >= len("CLAUDE_CONFIG_DIR=") && kv[:len("CLAUDE_CONFIG_DIR=")] == "CLAUDE_CONFIG_DIR=" {
+				matches = append(matches, kv)
+			}
+		}
+		require.Len(t, matches, 1, "expected exactly one CLAUDE_CONFIG_DIR entry")
+		require.Equal(t, "CLAUDE_CONFIG_DIR=/new", matches[0])
+	})
+
+	t.Run("keys absent from overrides are kept from base", func(t *testing.T) {
+		base := []string{"HOME=/home/user", "PATH=/usr/bin"}
+		overrides := []string{"CLAUDE_CONFIG_DIR=/new"}
+		got := mergeEnv(base, overrides)
+		require.Contains(t, got, "HOME=/home/user")
+		require.Contains(t, got, "PATH=/usr/bin")
+		require.Contains(t, got, "CLAUDE_CONFIG_DIR=/new")
+	})
+
+	t.Run("empty overrides returns base unchanged", func(t *testing.T) {
+		base := []string{"A=1", "B=2"}
+		got := mergeEnv(base, nil)
+		require.Equal(t, base, got)
+	})
+}
+
+func TestDispatchArgsHelpFlag(t *testing.T) {
+	// "-h" is a flag, so it must NOT be rewritten to "use".
+	got := DispatchArgs([]string{"-h"})
+	require.Equal(t, []string{"-h"}, got)
+}
