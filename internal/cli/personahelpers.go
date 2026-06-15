@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	toml "github.com/pelletier/go-toml/v2"
 
@@ -159,6 +160,60 @@ func removePersona(e *environment.Environment, name string) error {
 		return fmt.Errorf("remove persona dir: %w", err)
 	}
 	return nil
+}
+
+// resolveActivePersona returns the persona name from args[0] if present,
+// otherwise the environment's active persona.
+func resolveActivePersona(e *environment.Environment, args []string) (string, error) {
+	if len(args) > 0 && args[0] != "" {
+		return args[0], nil
+	}
+	if a := e.ActivePersona(); a != "" {
+		return a, nil
+	}
+	return "", fmt.Errorf("no persona given and no active persona set")
+}
+
+// takeSnapshot writes the persona dir as a tree and records a snapshot.
+// It returns the new snapshot id.
+func takeSnapshot(e *environment.Environment, persona, msg string) (domain.SnapshotID, error) {
+	if _, err := e.LoadPersona(persona); err != nil {
+		return "", err
+	}
+	if msg == "" {
+		msg = "snapshot " + persona
+	}
+	dir := filepath.Join(environment.RepoDir(e.Hash), "personas", persona)
+	tree, err := e.Store.WriteTree(dir)
+	if err != nil {
+		return "", fmt.Errorf("write tree: %w", err)
+	}
+	prev, _ := e.Store.Timeline(persona) // newest first; may be empty
+	var parents []domain.SnapshotID
+	if len(prev) > 0 {
+		parents = []domain.SnapshotID{prev[0]}
+	}
+	snap := domain.Snapshot{
+		Persona:   persona,
+		Parents:   parents,
+		Message:   msg,
+		Author:    e.Author(),
+		Timestamp: time.Now().UTC(),
+		TreeID:    string(tree),
+	}
+	id, err := e.Store.WriteSnapshot(snap)
+	if err != nil {
+		return "", fmt.Errorf("write snapshot: %w", err)
+	}
+	return id, nil
+}
+
+// shortID truncates an id for display.
+func shortID(id string) string {
+	if len(id) > 12 {
+		return id[:12]
+	}
+	return id
 }
 
 // scaffoldPersona materializes a persona template into personas/<name>/ in the
