@@ -1,0 +1,15 @@
+# Compiled binary (built via `go build -o claude_git ./cmd/claude_git`)
+/claude_git
+/cmd/claude_git/claude_git
+*.exe
+
+# Go test / coverage artifacts
+*.test
+*.out
+coverage.*
+
+# OS / editor noise
+.DS_Store
+*~
+.idea/
+.vscode/
