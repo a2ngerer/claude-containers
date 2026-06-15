@@ -43,7 +43,7 @@ func Materialize(e *environment.Environment, rm compose.ResolvedManifest, destDi
 		return err
 	}
 
-	if err := writeMCP(destDir, rm.MCP); err != nil {
+	if err := writeMCP(destDir, rm.Enforcement, rm.MCP); err != nil {
 		return err
 	}
 

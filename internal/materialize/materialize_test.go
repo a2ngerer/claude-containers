@@ -78,9 +78,10 @@ func TestMaterialize_AllowlistOnly(t *testing.T) {
 	// generated files
 	require.FileExists(t, filepath.Join(dest, "CLAUDE.md"))
 	require.FileExists(t, filepath.Join(dest, "settings.json"))
-	// MCP off -> no mcp.json
-	_, err = os.Stat(filepath.Join(dest, "mcp.json"))
-	require.True(t, os.IsNotExist(err))
+	// I3: read-only persona is MCP-isolated -> an empty mcp.json is always
+	// materialized so the launch can pass --strict-mcp-config and no project
+	// or user MCP server leaks in.
+	require.FileExists(t, filepath.Join(dest, "mcp.json"))
 
 	md, err := os.ReadFile(filepath.Join(dest, "CLAUDE.md"))
 	require.NoError(t, err)
@@ -130,6 +131,37 @@ func TestMaterialize_TraversalSubagentNameRejected(t *testing.T) {
 	err := Materialize(e, rm, dest)
 	require.Error(t, err, "subagent name escaping destDir must be rejected")
 	require.Contains(t, err.Error(), "invalid persona component name")
+}
+
+// I3 — a read-only persona with no MCP config and Strict=false is still
+// MCP-isolated: an empty mcp.json must be materialized so launch can enforce
+// --strict-mcp-config.
+func TestMaterialize_ReadOnlyWritesEmptyMCP(t *testing.T) {
+	e := seedRepo(t, "reviewer")
+	rm := reviewerManifest()
+	rm.MCP = domain.MCPConfig{Config: "", Strict: false} // read-only still isolates
+
+	dest := filepath.Join(t.TempDir(), "cfg")
+	require.NoError(t, Materialize(e, rm, dest))
+
+	got, err := os.ReadFile(filepath.Join(dest, "mcp.json"))
+	require.NoError(t, err)
+	require.JSONEq(t, `{"mcpServers":{}}`, string(got))
+}
+
+// I3 — a non-isolated persona (default mode, no MCP, not strict) gets no
+// mcp.json, so the launch omits MCP flags entirely.
+func TestMaterialize_NonIsolatedHasNoMCP(t *testing.T) {
+	e := seedRepo(t, "reviewer")
+	rm := reviewerManifest()
+	rm.Enforcement.PermissionMode = "default"
+	rm.MCP = domain.MCPConfig{Config: "", Strict: false}
+
+	dest := filepath.Join(t.TempDir(), "cfg")
+	require.NoError(t, Materialize(e, rm, dest))
+
+	_, err := os.Stat(filepath.Join(dest, "mcp.json"))
+	require.True(t, os.IsNotExist(err), "non-isolated persona must not get an mcp.json")
 }
 
 func TestMaterialize_Idempotent(t *testing.T) {
