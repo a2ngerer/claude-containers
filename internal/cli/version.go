@@ -140,3 +140,28 @@ func newRollbackCmd(open envOpener) *cobra.Command {
 	}
 }
 
+// newTagCmd builds the `tag` command.
+func newTagCmd(open envOpener) *cobra.Command {
+	return &cobra.Command{
+		Use:   "tag <persona> <version>",
+		Short: "Tag a persona's newest snapshot with a SemVer version",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			env, err := open()
+			if err != nil {
+				return err
+			}
+			persona, version := args[0], args[1]
+			ids, _ := env.Store.Timeline(persona)
+			if len(ids) == 0 {
+				return fmt.Errorf("cannot tag %q: no snapshots yet (run: claude_git snapshot %s)", persona, persona)
+			}
+			if err := env.Store.SetTag(persona, version, ids[0]); err != nil {
+				return fmt.Errorf("set tag: %w", err)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Tagged %q snapshot %s as %s:%s\n", persona, shortID(string(ids[0])), persona, version)
+			return nil
+		},
+	}
+}
+

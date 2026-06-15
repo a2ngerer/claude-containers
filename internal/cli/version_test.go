@@ -185,3 +185,41 @@ func TestRollbackCmd_RestoresPriorTree(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, top.Message, "rollback to")
 }
+
+func runTag(t *testing.T, env *environment.Environment, args ...string) (string, error) {
+	t.Helper()
+	cmd := newTagCmd(func() (*environment.Environment, error) { return env, nil })
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+func TestTagCmd_TagsNewestSnapshot(t *testing.T) {
+	env := newVerTestEnv(t)
+	_, err := runNew(t, env, "coder", "--template", "coder")
+	require.NoError(t, err)
+	_, err = runSnapshot(t, env, "coder", "-m", "v1")
+	require.NoError(t, err)
+
+	_, err = runTag(t, env, "coder", "1.0.0")
+	require.NoError(t, err)
+
+	ids, err := env.Store.Timeline("coder")
+	require.NoError(t, err)
+	resolved, err := env.Store.ResolveTag("coder", "1.0.0")
+	require.NoError(t, err)
+	require.Equal(t, ids[0], resolved)
+}
+
+func TestTagCmd_NoSnapshots(t *testing.T) {
+	env := newVerTestEnv(t)
+	_, err := runNew(t, env, "coder", "--template", "coder")
+	require.NoError(t, err)
+
+	_, err = runTag(t, env, "coder", "1.0.0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no snapshots")
+}
