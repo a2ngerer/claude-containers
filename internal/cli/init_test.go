@@ -35,6 +35,10 @@ func seedWorkspace(t *testing.T) string {
 func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
 	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
 	ws := seedWorkspace(t)
+	// EvalSymlinks is now applied inside Create/Open; resolve here too so that
+	// expected hash values match the canonical path (macOS /var -> /private/var).
+	wsReal, err := filepath.EvalSymlinks(ws)
+	require.NoError(t, err)
 
 	out, err := runCLI(t, "init", "--workspace", ws)
 	require.NoError(t, err)
@@ -43,10 +47,10 @@ func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
 	// marker file written into the workspace, one line = hash
 	marker, err := os.ReadFile(filepath.Join(ws, ".claude_git"))
 	require.NoError(t, err)
-	require.Equal(t, environment.WorkspaceHash(filepath.Clean(ws)), strings.TrimSpace(string(marker)))
+	require.Equal(t, environment.WorkspaceHash(filepath.Clean(wsReal)), strings.TrimSpace(string(marker)))
 
 	// _base persona created with imported content
-	hash := environment.WorkspaceHash(filepath.Clean(ws))
+	hash := environment.WorkspaceHash(filepath.Clean(wsReal))
 	baseDir := filepath.Join(environment.RepoDir(hash), "personas", "_base")
 	require.FileExists(t, filepath.Join(baseDir, "persona.toml"))
 	require.FileExists(t, filepath.Join(baseDir, "CLAUDE.md"))
@@ -71,12 +75,14 @@ func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
 func TestInit_NoExistingClaude(t *testing.T) {
 	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
 	ws := t.TempDir()
+	wsReal, err := filepath.EvalSymlinks(ws)
+	require.NoError(t, err)
 
 	out, err := runCLI(t, "init", "--workspace", ws)
 	require.NoError(t, err)
 	require.Contains(t, out, "Initialized")
 
-	hash := environment.WorkspaceHash(filepath.Clean(ws))
+	hash := environment.WorkspaceHash(filepath.Clean(wsReal))
 	baseDir := filepath.Join(environment.RepoDir(hash), "personas", "_base")
 	require.FileExists(t, filepath.Join(baseDir, "persona.toml"))
 }

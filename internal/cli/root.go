@@ -2,6 +2,7 @@ package cli
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -9,8 +10,14 @@ import (
 )
 
 // openCWD opens the environment bound to the current working directory.
+// filepath.EvalSymlinks resolves macOS /var -> /private/var so the workspace
+// hash matches what environment.Create recorded.
 func openCWD() (*environment.Environment, error) {
 	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	wd, err = filepath.EvalSymlinks(wd)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +56,11 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newDiffCmd(openCWD))
 	root.AddCommand(newRollbackCmd(openCWD))
 	root.AddCommand(newTagCmd(openCWD))
+
+	// M3 activation commands
+	root.AddCommand(newUseCmd())
+	root.AddCommand(newDeactivateCmd())
+	root.AddCommand(newVerifyCmd())
 
 	return root
 }

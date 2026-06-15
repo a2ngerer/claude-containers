@@ -12,15 +12,18 @@ import (
 func TestStatus_AfterInit(t *testing.T) {
 	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
 	ws := t.TempDir()
+	// EvalSymlinks resolves macOS /var -> /private/var for stable hashes.
+	wsReal, err := filepath.EvalSymlinks(ws)
+	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(filepath.Join(ws, "CLAUDE.md"), []byte("# rules\n"), 0o644))
 
-	_, err := runCLI(t, "init", "--workspace", ws)
+	_, err = runCLI(t, "init", "--workspace", ws)
 	require.NoError(t, err)
 
 	out, err := runCLI(t, "status", "--workspace", ws)
 	require.NoError(t, err)
-	require.Contains(t, out, filepath.Clean(ws))
-	require.Contains(t, out, environment.WorkspaceHash(filepath.Clean(ws)))
+	require.Contains(t, out, filepath.Clean(wsReal))
+	require.Contains(t, out, environment.WorkspaceHash(filepath.Clean(wsReal)))
 	require.Contains(t, out, "none") // no active persona yet
 }
 
