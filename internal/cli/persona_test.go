@@ -160,3 +160,48 @@ func TestShowCmd_RendersCapabilities(t *testing.T) {
 	require.Contains(t, out, "superpowers")     // base skill withheld by replace mode
 	require.Contains(t, out, "user, project")   // setting sources
 }
+
+func runRm(t *testing.T, env *environment.Environment, args ...string) (string, error) {
+	t.Helper()
+	cmd := newRmCmd(func() (*environment.Environment, error) { return env, nil })
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+func TestRmCmd_RemovesPersona(t *testing.T) {
+	env := newTestEnv(t)
+	_, err := runNew(t, env, "tmp", "--template", "coder")
+	require.NoError(t, err)
+
+	_, err = runRm(t, env, "tmp")
+	require.NoError(t, err)
+
+	_, err = env.LoadPersona("tmp")
+	require.ErrorIs(t, err, domain.ErrPersonaNotFound)
+
+	dir := filepath.Join(environment.RepoDir(env.Hash), "personas", "tmp")
+	_, statErr := os.Stat(dir)
+	require.True(t, os.IsNotExist(statErr))
+}
+
+func TestRmCmd_RefusesActivePersona(t *testing.T) {
+	env := newTestEnv(t)
+	_, err := runNew(t, env, "act", "--template", "coder")
+	require.NoError(t, err)
+	require.NoError(t, env.SetActive("act"))
+
+	_, err = runRm(t, env, "act")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "active")
+}
+
+func TestPersonaTOMLPath(t *testing.T) {
+	env := newTestEnv(t)
+	got := personaTOMLPath(env, "p")
+	want := filepath.Join(environment.RepoDir(env.Hash), "personas", "p", "persona.toml")
+	require.Equal(t, want, got)
+}
