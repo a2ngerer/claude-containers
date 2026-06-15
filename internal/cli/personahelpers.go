@@ -216,6 +216,26 @@ func shortID(id string) string {
 	return id
 }
 
+// formatTimeline renders a persona's snapshots newest-first, one line each.
+func formatTimeline(e *environment.Environment, persona string) (string, error) {
+	ids, err := e.Store.Timeline(persona)
+	if err != nil {
+		return "", fmt.Errorf("timeline for %q: %w", persona, err)
+	}
+	if len(ids) == 0 {
+		return fmt.Sprintf("No snapshots for %q yet.\n", persona), nil
+	}
+	var b strings.Builder
+	for _, id := range ids {
+		s, err := e.Store.ReadSnapshot(id)
+		if err != nil {
+			return "", fmt.Errorf("read snapshot %s: %w", id, err)
+		}
+		fmt.Fprintf(&b, "%s  %s  %s\n", shortID(string(id)), s.Timestamp.UTC().Format(time.RFC3339), s.Message)
+	}
+	return b.String(), nil
+}
+
 // scaffoldPersona materializes a persona template into personas/<name>/ in the
 // repo. The persona's name is forced to `name`. Refuses to overwrite.
 func scaffoldPersona(e *environment.Environment, name string, sc personaScaffold) error {

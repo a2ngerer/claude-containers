@@ -61,3 +61,44 @@ func TestSnapshotCmd_DefaultsToActivePersona(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, ids, 1)
 }
+
+func runLog(t *testing.T, env *environment.Environment, args ...string) (string, error) {
+	t.Helper()
+	cmd := newLogCmd(func() (*environment.Environment, error) { return env, nil })
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+func TestLogCmd_Roundtrip(t *testing.T) {
+	env := newVerTestEnv(t)
+	_, err := runNew(t, env, "coder", "--template", "coder")
+	require.NoError(t, err)
+	_, err = runSnapshot(t, env, "coder", "-m", "one")
+	require.NoError(t, err)
+	_, err = runSnapshot(t, env, "coder", "-m", "two")
+	require.NoError(t, err)
+
+	out, err := runLog(t, env, "coder")
+	require.NoError(t, err)
+
+	// newest first: "two" appears before "one"
+	idxTwo := indexOf(out, "two")
+	idxOne := indexOf(out, "one")
+	require.NotEqual(t, -1, idxTwo)
+	require.NotEqual(t, -1, idxOne)
+	require.Less(t, idxTwo, idxOne)
+}
+
+// indexOf is a tiny local substring finder to avoid importing strings here.
+func indexOf(s, sub string) int {
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if s[i:i+len(sub)] == sub {
+			return i
+		}
+	}
+	return -1
+}
