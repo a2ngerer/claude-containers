@@ -8,7 +8,7 @@
 
 ## 1. Module, toolchain, dependencies
 
-- **Module path:** `github.com/angerer/claude_git` (placeholder — owner adjusts before first push; all import paths below assume it)
+- **Module path:** `github.com/a2ngerer/claude-containers` (placeholder — owner adjusts before first push; all import paths below assume it)
 - **Go:** 1.23+
 - **CLI:** `github.com/spf13/cobra` (commands) + `github.com/spf13/viper` (global config)
 - **Git plumbing:** `github.com/go-git/go-git/v5` (pure-Go; no git binary dependency for core ops)
@@ -197,7 +197,7 @@ var (
 // internal/storage/engine.go
 package storage
 
-import "github.com/angerer/claude_git/internal/domain"
+import "github.com/a2ngerer/claude-containers/internal/domain"
 
 type ObjectID string
 

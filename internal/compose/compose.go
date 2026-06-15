@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // ResolvedManifest is the composed, effective configuration of a leaf persona.

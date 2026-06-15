@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // envOpener resolves the bound environment for the current workspace. The CLI

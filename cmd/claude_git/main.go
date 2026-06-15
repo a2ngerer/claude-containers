@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/angerer/claude_git/internal/cli"
+	"github.com/a2ngerer/claude-containers/internal/cli"
 )
 
 func main() {

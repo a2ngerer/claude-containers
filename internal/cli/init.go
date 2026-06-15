@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
-	"github.com/angerer/claude_git/internal/probe"
-	"github.com/angerer/claude_git/internal/share"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/probe"
+	"github.com/a2ngerer/claude-containers/internal/share"
 	"github.com/spf13/cobra"
 )
 

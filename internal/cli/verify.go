@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/enforce"
-	"github.com/angerer/claude_git/internal/environment"
-	"github.com/angerer/claude_git/internal/materialize"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/materialize"
 	"github.com/spf13/cobra"
 )
 

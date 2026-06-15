@@ -1,6 +1,6 @@
 package enforce
 
-import "github.com/angerer/claude_git/internal/domain"
+import "github.com/a2ngerer/claude-containers/internal/domain"
 
 // PermissionSet is the resolved allow/deny pair plus the permission mode that
 // gets serialized into the materialized settings.json.

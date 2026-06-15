@@ -7,8 +7,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/angerer/claude_git/internal/activate"
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/activate"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/spf13/cobra"
 )
 

@@ -101,7 +101,7 @@ package enforce
 import (
 	"testing"
 
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -171,7 +171,7 @@ Expected: FAIL — `undefined: BuildPermissions` / `undefined: PermissionSet`.
 ```go
 package enforce
 
-import "github.com/angerer/claude_git/internal/domain"
+import "github.com/a2ngerer/claude-containers/internal/domain"
 
 // PermissionSet is the resolved allow/deny pair plus the permission mode that
 // gets serialized into the materialized settings.json.
@@ -255,7 +255,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/enforce"
+	"github.com/a2ngerer/claude-containers/internal/enforce"
 	"github.com/stretchr/testify/require"
 )
 
@@ -301,7 +301,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/enforce"
+	"github.com/a2ngerer/claude-containers/internal/enforce"
 )
 
 // settingsPermissions mirrors the "permissions" object Claude Code reads from
@@ -378,7 +378,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -437,7 +437,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 )
 
 // mcpFile is the minimal Claude Code mcp.json shape used only for the empty
@@ -518,9 +518,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -660,9 +660,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/enforce"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // Materialize renders rm into destDir (a CLAUDE_CONFIG_DIR outside the
@@ -817,8 +817,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -937,8 +937,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 )
 
 // Verify asserts that destDir contains exactly the allowlisted skills/subagents
@@ -1154,8 +1154,8 @@ package activate
 import (
 	"testing"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1220,8 +1220,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/enforce"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/enforce"
 )
 
 // LaunchSpec is the environment + argv to start (or print) for claude.
@@ -1300,8 +1300,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1403,8 +1403,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // lockState is the JSON body of the environment lockfile.
@@ -1549,8 +1549,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1678,11 +1678,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/enforce"
-	"github.com/angerer/claude_git/internal/environment"
-	"github.com/angerer/claude_git/internal/materialize"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/materialize"
 )
 
 // ActivationResult is the outcome of Activate: where the env was materialized,
@@ -1890,9 +1890,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/angerer/claude_git/internal/activate"
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/activate"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/spf13/cobra"
 )
 
@@ -2040,7 +2040,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/angerer/claude_git/internal/cli"
+	"github.com/a2ngerer/claude-containers/internal/cli"
 )
 
 func main() {
@@ -2092,7 +2092,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -2198,10 +2198,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/enforce"
-	"github.com/angerer/claude_git/internal/environment"
-	"github.com/angerer/claude_git/internal/materialize"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/materialize"
 	"github.com/spf13/cobra"
 )
 

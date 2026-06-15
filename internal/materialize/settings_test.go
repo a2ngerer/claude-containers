@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/enforce"
+	"github.com/a2ngerer/claude-containers/internal/enforce"
 	"github.com/stretchr/testify/require"
 )
 

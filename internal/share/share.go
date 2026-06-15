@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // ErrSecretsFound is returned by Push when ScanForSecrets reports suspect paths.

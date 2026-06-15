@@ -3,8 +3,8 @@ package activate
 import (
 	"testing"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 

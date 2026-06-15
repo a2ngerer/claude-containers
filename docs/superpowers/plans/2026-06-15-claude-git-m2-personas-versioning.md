@@ -35,7 +35,7 @@
 
 ## Conventions for every task
 
-- Module path: `github.com/angerer/claude_git`.
+- Module path: `github.com/a2ngerer/claude-containers`.
 - Run all commands from the repo root `/Users/angeral/Repositories/claude_git`.
 - Tests isolate the tool home: every test sets `t.Setenv("CLAUDE_GIT_HOME", t.TempDir())` and seeds an environment via `environment.Create(t.TempDir())` (M1 API).
 - Use `require` (fail-fast), never `assert`.
@@ -64,9 +64,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -160,8 +160,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // ResolvedManifest is the composed, effective configuration of a leaf persona.
@@ -258,7 +258,7 @@ func union(a, b []string) []string {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/compose/ 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/compose`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/compose`.
 
 - [ ] **1.5 — Commit.**
 
@@ -351,7 +351,7 @@ Expected: `replace`/`NoExtends` pass immediately (Task 1 already implements both
 cd /Users/angeral/Repositories/claude_git && go test ./internal/compose/ 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/compose`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/compose`.
 
 - [ ] **2.5 — Commit.**
 
@@ -379,8 +379,8 @@ package compose_test
 import (
 	"testing"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -488,7 +488,7 @@ func onlyIn(a, b []string) []string {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/compose/ 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/compose`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/compose`.
 
 - [ ] **3.5 — Commit.**
 
@@ -658,7 +658,7 @@ func personaTemplate(name string) (personaScaffold, bool) {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestPersonaTemplate 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **4.5 — Commit.**
 
@@ -687,8 +687,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 ```
@@ -748,8 +748,8 @@ import (
 
 	toml "github.com/pelletier/go-toml/v2"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // tomlPersona mirrors the [enforcement.tools] sub-table that domain.Enforcement
@@ -813,7 +813,7 @@ func scaffoldPersona(e *environment.Environment, name string, sc personaScaffold
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestScaffoldPersona 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **5.5 — Commit.**
 
@@ -961,7 +961,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // envOpener resolves the bound environment for the current workspace. The CLI
@@ -1072,7 +1072,7 @@ author  = ""
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestNewCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **6.5 — Commit.**
 
@@ -1139,7 +1139,7 @@ cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestSh
 
 Expected: `undefined: newShowCmd`.
 
-- [ ] **7.3 — Minimal implementation.** Extend the import block of `internal/cli/personahelpers.go` to add `"sort"`, `"strings"`, and `"github.com/angerer/claude_git/internal/compose"`, then add:
+- [ ] **7.3 — Minimal implementation.** Extend the import block of `internal/cli/personahelpers.go` to add `"sort"`, `"strings"`, and `"github.com/a2ngerer/claude-containers/internal/compose"`, then add:
 
 ```go
 // withheldBaseSkills returns base-layer skills that the composed manifest does
@@ -1202,7 +1202,7 @@ func joinOrNone(xs []string) string {
 }
 ```
 
-Then extend the import block of `internal/cli/persona.go` to add `"github.com/angerer/claude_git/internal/compose"`, and add:
+Then extend the import block of `internal/cli/persona.go` to add `"github.com/a2ngerer/claude-containers/internal/compose"`, and add:
 
 ```go
 // newShowCmd builds the `show` command.
@@ -1233,7 +1233,7 @@ func newShowCmd(open envOpener) *cobra.Command {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestShowCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **7.5 — Commit.**
 
@@ -1407,7 +1407,7 @@ func newRmCmd(open envOpener) *cobra.Command {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run 'TestRmCmd|TestPersonaTOMLPath' 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **8.5 — Commit.**
 
@@ -1438,7 +1438,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1590,7 +1590,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // newSnapshotCmd builds the `snapshot` command (alias `commit`).
@@ -1631,7 +1631,7 @@ func newSnapshotCmd(open envOpener) *cobra.Command {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestSnapshotCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **9.5 — Commit.**
 
@@ -1764,7 +1764,7 @@ func newLogCmd(open envOpener) *cobra.Command {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestLogCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **10.5 — Commit.**
 
@@ -1785,7 +1785,7 @@ cd /Users/angeral/Repositories/claude_git && git add internal/cli/version.go int
 
 ### Steps
 
-- [ ] **11.1 — Write the failing test.** Add `"github.com/angerer/claude_git/internal/domain"` to the import block of `internal/cli/version_test.go`, then append:
+- [ ] **11.1 — Write the failing test.** Add `"github.com/a2ngerer/claude-containers/internal/domain"` to the import block of `internal/cli/version_test.go`, then append:
 
 ```go
 func runDiff(t *testing.T, env *environment.Environment, args ...string) (string, error) {
@@ -1856,7 +1856,7 @@ func formatCapabilityDiff(d compose.CapabilityDiff) string {
 }
 ```
 
-Then add to `internal/cli/version.go` — extend its import block to add `"github.com/angerer/claude_git/internal/compose"`, then add:
+Then add to `internal/cli/version.go` — extend its import block to add `"github.com/a2ngerer/claude-containers/internal/compose"`, then add:
 
 ```go
 // newDiffCmd builds the `diff` command (capability diff).
@@ -1904,7 +1904,7 @@ func newDiffCmd(open envOpener) *cobra.Command {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestDiffCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **11.5 — Commit.**
 
@@ -2010,7 +2010,7 @@ func resolveSnapshotRef(e *environment.Environment, persona, ref string) (domain
 }
 ```
 
-Then add to `internal/cli/version.go` — extend its import block to add `"path/filepath"` and `"github.com/angerer/claude_git/internal/storage"`, then add:
+Then add to `internal/cli/version.go` — extend its import block to add `"path/filepath"` and `"github.com/a2ngerer/claude-containers/internal/storage"`, then add:
 
 ```go
 // domainObjectID converts a stored tree id string to a storage.ObjectID.
@@ -2057,7 +2057,7 @@ func newRollbackCmd(open envOpener) *cobra.Command {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestRollbackCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **12.5 — Commit.**
 
@@ -2165,7 +2165,7 @@ func newTagCmd(open envOpener) *cobra.Command {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestTagCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/angerer/claude_git/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
 
 - [ ] **13.5 — Commit.**
 
@@ -2255,7 +2255,7 @@ Then add (adapting to the existing `AddCommand` block):
 	)
 ```
 
-Ensure `internal/cli/root.go` imports `"os"` and `"github.com/angerer/claude_git/internal/environment"` (add if missing). If M1 already defines `openCWD`, delete the duplicate above and use the existing one.
+Ensure `internal/cli/root.go` imports `"os"` and `"github.com/a2ngerer/claude-containers/internal/environment"` (add if missing). If M1 already defines `openCWD`, delete the duplicate above and use the existing one.
 
 - [ ] **14.5 — Run the full milestone gate.**
 

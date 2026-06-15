@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // lockState is the JSON body of the environment lockfile.

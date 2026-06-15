@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/angerer/claude_git/internal/share"
+	"github.com/a2ngerer/claude-containers/internal/share"
 	"github.com/spf13/cobra"
 )
 

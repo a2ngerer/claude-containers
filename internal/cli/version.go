@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
-	"github.com/angerer/claude_git/internal/storage"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/storage"
 )
 
 // newSnapshotCmd builds the `snapshot` command (alias `commit`).

@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/compose"
-	"github.com/angerer/claude_git/internal/enforce"
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/compose"
+	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // Materialize renders rm into destDir (a CLAUDE_CONFIG_DIR outside the

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/spf13/cobra"
 )
 

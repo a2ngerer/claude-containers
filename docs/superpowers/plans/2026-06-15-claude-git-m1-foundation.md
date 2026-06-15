@@ -16,7 +16,7 @@
 
 | File | Responsibility |
 |---|---|
-| `go.mod` | Module `github.com/angerer/claude_git`, Go 1.23, pinned deps (cobra, viper, go-git/v5, go-toml/v2, testify). |
+| `go.mod` | Module `github.com/a2ngerer/claude-containers`, Go 1.23, pinned deps (cobra, viper, go-git/v5, go-toml/v2, testify). |
 | `cmd/claude_git/main.go` | Entrypoint: build the cobra root via `cli.NewRootCmd()` and `Execute()` it; exit non-zero on error. |
 | `internal/domain/persona.go` | `Persona`, `Config`, `SkillSet`, `SubagentSet`, `MCPConfig`, `Metadata`; `Persona.IsLayer()`; TOML load/save helpers with `[enforcement.tools]` allow/deny mapping. |
 | `internal/domain/enforcement.go` | `Enforcement` (tools allow/deny carried in `-`-tagged fields). |
@@ -109,7 +109,7 @@ Expected: compilation failure — `go.mod` does not exist yet, so the command er
 Create `go.mod`:
 
 ```
-module github.com/angerer/claude_git
+module github.com/a2ngerer/claude-containers
 
 go 1.23
 
@@ -162,7 +162,7 @@ package main
 import (
 	"os"
 
-	"github.com/angerer/claude_git/internal/cli"
+	"github.com/a2ngerer/claude-containers/internal/cli"
 )
 
 func main() {
@@ -207,7 +207,7 @@ cd /Users/angeral/Repositories/claude_git && go mod tidy
 cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./internal/cli/
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/cli`).
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/cli`).
 
 - [ ] **Step 5: Commit**
 
@@ -407,7 +407,7 @@ var (
 cd /Users/angeral/Repositories/claude_git && go test ./internal/domain/
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/domain`).
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/domain`).
 
 - [ ] **Step 5: Commit**
 
@@ -668,7 +668,7 @@ func SavePersonaTOML(p Persona, path string) error {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/domain/
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/domain`) — all domain tests, including the round-trip.
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/domain`) — all domain tests, including the round-trip.
 
 - [ ] **Step 5: Commit**
 
@@ -696,7 +696,7 @@ package storage
 import (
 	"testing"
 
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -753,7 +753,7 @@ Create `internal/storage/engine.go`:
 // internal/storage/engine.go
 package storage
 
-import "github.com/angerer/claude_git/internal/domain"
+import "github.com/a2ngerer/claude-containers/internal/domain"
 
 type ObjectID string
 
@@ -792,7 +792,7 @@ type StorageEngine interface {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/storage/
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/storage`).
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/storage`).
 
 - [ ] **Step 5: Commit**
 
@@ -824,7 +824,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -999,7 +999,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -1373,7 +1373,7 @@ func authorEmail(author string) string {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/storage/
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/storage`) — all object/tree/snapshot/timeline/tag/remote round-trips green against the temp repo.
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/storage`) — all object/tree/snapshot/timeline/tag/remote round-trips green against the temp repo.
 
 - [ ] **Step 5: Commit**
 
@@ -1505,7 +1505,7 @@ func CacheDir(hash, persona string) string {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/environment/
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/environment`).
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/environment`).
 
 - [ ] **Step 5: Commit**
 
@@ -1535,7 +1535,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1643,8 +1643,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/storage"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/storage"
 	toml "github.com/pelletier/go-toml/v2"
 )
 
@@ -1792,7 +1792,7 @@ func writeEnvConfig(hash string, cfg EnvConfig) error {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/environment/
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/environment`) — paths and environment tests both green.
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/environment`) — paths and environment tests both green.
 
 - [ ] **Step 5: Commit**
 
@@ -1928,7 +1928,7 @@ func IsClaudeTracked(workspace string) (bool, error) {
 cd /Users/angeral/Repositories/claude_git && go test ./internal/probe/
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/probe`).
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/probe`).
 
 - [ ] **Step 5: Commit**
 
@@ -1961,7 +1961,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -2076,9 +2076,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/domain"
-	"github.com/angerer/claude_git/internal/environment"
-	"github.com/angerer/claude_git/internal/probe"
+	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/probe"
 	"github.com/spf13/cobra"
 )
 
@@ -2235,7 +2235,7 @@ func copyFile(src, dst string) error {
 cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./internal/cli/ -run Init
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/cli`).
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/cli`).
 
 - [ ] **Step 5: Commit**
 
@@ -2325,7 +2325,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/spf13/cobra"
 )
 
@@ -2379,7 +2379,7 @@ func runList(out io.Writer, workspace string) error {
 cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./internal/cli/ -run List
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/cli`).
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/cli`).
 
 - [ ] **Step 5: Commit**
 
@@ -2410,7 +2410,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -2480,7 +2480,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/spf13/cobra"
 )
 
@@ -2521,7 +2521,7 @@ func runStatus(out io.Writer, workspace string) error {
 cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./internal/cli/
 ```
 
-Expected: PASS (`ok  github.com/angerer/claude_git/internal/cli`) — all CLI tests (root, init, list, status) green.
+Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/cli`) — all CLI tests (root, init, list, status) green.
 
 - [ ] **Step 5: Commit**
 
@@ -2557,11 +2557,11 @@ cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./...
 Expected: all packages PASS. If any package fails, that is the signal to fix it in this task before the milestone closes:
 
 ```
-ok  github.com/angerer/claude_git/internal/cli
-ok  github.com/angerer/claude_git/internal/domain
-ok  github.com/angerer/claude_git/internal/environment
-ok  github.com/angerer/claude_git/internal/probe
-ok  github.com/angerer/claude_git/internal/storage
+ok  github.com/a2ngerer/claude-containers/internal/cli
+ok  github.com/a2ngerer/claude-containers/internal/domain
+ok  github.com/a2ngerer/claude-containers/internal/environment
+ok  github.com/a2ngerer/claude-containers/internal/probe
+ok  github.com/a2ngerer/claude-containers/internal/storage
 ```
 
 - [ ] **Step 3: Write minimal implementation**

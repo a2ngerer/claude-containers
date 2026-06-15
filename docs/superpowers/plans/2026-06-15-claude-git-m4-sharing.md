@@ -189,7 +189,7 @@ id_ed25519.*
 ```
 
 - [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/`
-- [ ] **Expected:** `ok  github.com/angerer/claude_git/internal/share`.
+- [ ] **Expected:** `ok  github.com/a2ngerer/claude-containers/internal/share`.
 
 ### Step 1.3 — REFACTOR
 
@@ -417,7 +417,7 @@ func fileHasSecretMarker(path string) (bool, error) {
 ```
 
 - [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/`
-- [ ] **Expected:** `ok  github.com/angerer/claude_git/internal/share`.
+- [ ] **Expected:** `ok  github.com/a2ngerer/claude-containers/internal/share`.
 
 ### Step 2.3 — REFACTOR
 
@@ -449,7 +449,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -491,7 +491,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 )
 
 // ErrSecretsFound is returned by Push when ScanForSecrets reports suspect paths.
@@ -694,8 +694,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
-	"github.com/angerer/claude_git/internal/share"
+	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/share"
 	"github.com/stretchr/testify/require"
 )
 
@@ -943,7 +943,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1021,8 +1021,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/environment"
-	"github.com/angerer/claude_git/internal/share"
+	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/share"
 	"github.com/spf13/cobra"
 )
 
@@ -1157,7 +1157,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1237,7 +1237,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1318,7 +1318,7 @@ func TestInitFrom_ClonesExistingRepo(t *testing.T) {
      // ... M1's existing seed-from-local-.claude logic continues here unchanged ...
      ```
 
-  4. **Imports:** ensure `internal/cli/init.go` imports `"fmt"` and `"github.com/angerer/claude_git/internal/share"`. `cwdWorkspace` is already defined in `internal/cli/share.go` (same package), so no extra import is needed for it.
+  4. **Imports:** ensure `internal/cli/init.go` imports `"fmt"` and `"github.com/a2ngerer/claude-containers/internal/share"`. `cwdWorkspace` is already defined in `internal/cli/share.go` (same package), so no extra import is needed for it.
 
 - [ ] **Decision (recorded):** the `--from` branch fully REPLACES the seeding path — it does NOT both clone and seed. Cloning brings the team's `_base` and personas verbatim; re-seeding from the onboarding machine's local `.claude/` would pollute the shared baseline. The two are mutually exclusive by design (spec §11: "seed `_base` from the existing `.claude/`, **or** clone an existing persona repo").
 - [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestInitFrom`
@@ -1348,7 +1348,7 @@ Confirm the whole milestone compiles, all tests pass, and the package layering (
 
 ### Step 9.2 — Import-cycle guard
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go list -deps ./internal/environment/ | grep -c 'github.com/angerer/claude_git/internal/share' || true`
+- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go list -deps ./internal/environment/ | grep -c 'github.com/a2ngerer/claude-containers/internal/share' || true`
 - [ ] **Expected:** `0` — `environment` must not depend on `share` (the gitignore is inlined; the drift test in Task 5 keeps them in sync).
 
 ### Step 9.3 — COMMIT (if any formatting fixups were needed)
@@ -1385,7 +1385,7 @@ Confirm the whole milestone compiles, all tests pass, and the package layering (
 **Exact `init.go` modify location for `--from`:** In `internal/cli/init.go`, function `newInitCmd() *cobra.Command`:
 1. Declare `var fromRemote string` and bind `cmd.Flags().StringVar(&fromRemote, "from", "", "clone an existing persona repo from this git remote instead of seeding _base")` after the command is built, in the same scope as `RunE`.
 2. As the FIRST statement inside `RunE`, add the short-circuit: `if fromRemote != "" { ws, err := cwdWorkspace(); ...; env, err := share.Clone(fromRemote, ws); ...; return nil }` — it clones via `share.Clone` and returns before M1's local-`.claude/` seeding path.
-3. Add imports `"fmt"` and `github.com/angerer/claude_git/internal/share` to `init.go`.
+3. Add imports `"fmt"` and `github.com/a2ngerer/claude-containers/internal/share` to `init.go`.
 The clone branch and the seed branch are mutually exclusive (spec §11: seed `_base` **or** clone).
 
 **`.gitignore` placement decision:** written eagerly in `environment.Create` (Task 5.3), NOT lazily at first push — it must protect the very first commit `init` makes. `share.Push` re-asserts via `ScanForSecrets` as a runtime backstop (defense in depth).

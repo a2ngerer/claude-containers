@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/angerer/claude_git/internal/storage"
+	"github.com/a2ngerer/claude-containers/internal/storage"
 )
 
 // defaultGitignore is a byte-identical copy of share.DefaultGitignore(). It is

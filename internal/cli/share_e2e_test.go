@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/angerer/claude_git/internal/environment"
-	"github.com/angerer/claude_git/internal/storage"
+	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/claude-containers/internal/storage"
 	"github.com/stretchr/testify/require"
 )
 

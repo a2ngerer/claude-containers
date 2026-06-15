@@ -1,4 +1,4 @@
-module github.com/angerer/claude_git
+module github.com/a2ngerer/claude-containers
 
 go 1.25.0
 
