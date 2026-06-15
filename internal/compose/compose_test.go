@@ -78,3 +78,56 @@ func TestCompose_UnionAndScalarOverride(t *testing.T) {
 	// CLAUDE.md = base body + "\n\n" + persona body
 	require.Equal(t, "MD:_base\n\nMD:coder", rm.ClaudeMD)
 }
+
+func TestCompose_ReplaceModeDropsBaseSkills(t *testing.T) {
+	base := baseLayer()
+	leaf := domain.Persona{
+		Name:    "reviewer",
+		Extends: "_base",
+		Config: domain.Config{
+			ClaudeMD:       "CLAUDE.md",
+			SettingSources: []string{"user", "project"},
+			Skills:         domain.SkillSet{Mode: "replace", Include: []string{"security-review"}},
+			Subagents:      domain.SubagentSet{Include: []string{"code-reviewer"}},
+		},
+	}
+	env := seedEnv(t, base, leaf)
+
+	rm, err := compose.Compose(env, "reviewer")
+	require.NoError(t, err)
+
+	// replace mode: ONLY the persona's skills, base-skill dropped
+	require.Equal(t, []string{"security-review"}, rm.Skills)
+	// subagents still union
+	require.ElementsMatch(t, []string{"base-agent", "code-reviewer"}, rm.Subagents)
+}
+
+func TestCompose_NoExtendsHasNoBasePrefix(t *testing.T) {
+	standalone := domain.Persona{
+		Name:    "solo",
+		Extends: "",
+		Config: domain.Config{
+			ClaudeMD: "CLAUDE.md",
+			Skills:   domain.SkillSet{Mode: "allowlist", Include: []string{"only-skill"}},
+		},
+	}
+	env := seedEnv(t, standalone)
+
+	rm, err := compose.Compose(env, "solo")
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"only-skill"}, rm.Skills)
+	require.Equal(t, "MD:solo", rm.ClaudeMD) // no "\n\n" prefix
+}
+
+func TestCompose_ExtendsLayerNotFound(t *testing.T) {
+	leaf := domain.Persona{
+		Name:    "broken",
+		Extends: "_ghost",
+		Config:  domain.Config{ClaudeMD: "CLAUDE.md"},
+	}
+	env := seedEnv(t, leaf)
+
+	_, err := compose.Compose(env, "broken")
+	require.ErrorIs(t, err, domain.ErrLayerNotFound)
+}
