@@ -120,6 +120,30 @@ func TestCompose_NoExtendsHasNoBasePrefix(t *testing.T) {
 	require.Equal(t, "MD:solo", rm.ClaudeMD) // no "\n\n" prefix
 }
 
+func TestCompose_BothClaudeMDEmptyYieldsEmpty(t *testing.T) {
+	base := domain.Persona{
+		Name:    "_base",
+		Extends: "",
+		Config:  domain.Config{ClaudeMD: "CLAUDE.md"},
+	}
+	leaf := domain.Persona{
+		Name:    "bare",
+		Extends: "_base",
+		Config:  domain.Config{ClaudeMD: "CLAUDE.md"},
+	}
+	// Seed without writing any CLAUDE.md: missing file -> empty content in readClaudeMD.
+	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	ws := t.TempDir()
+	env, err := environment.Create(ws)
+	require.NoError(t, err)
+	require.NoError(t, env.SavePersona(base))
+	require.NoError(t, env.SavePersona(leaf))
+
+	rm, err := compose.Compose(env, "bare")
+	require.NoError(t, err)
+	require.Equal(t, "", rm.ClaudeMD)
+}
+
 func TestCompose_ExtendsLayerNotFound(t *testing.T) {
 	leaf := domain.Persona{
 		Name:    "broken",

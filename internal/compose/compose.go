@@ -53,7 +53,14 @@ func Compose(e *environment.Environment, personaName string) (ResolvedManifest, 
 		if err != nil {
 			return ResolvedManifest{}, err
 		}
-		claudeMD = baseMD + "\n\n" + claudeMD
+		switch {
+		case baseMD == "":
+			// claudeMD keeps its current value (may also be empty)
+		case claudeMD == "":
+			claudeMD = baseMD
+		default:
+			claudeMD = baseMD + "\n\n" + claudeMD
+		}
 	}
 
 	return ResolvedManifest{
