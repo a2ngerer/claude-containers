@@ -7,6 +7,7 @@ import (
 
 	"github.com/angerer/claude_git/internal/compose"
 	"github.com/angerer/claude_git/internal/domain"
+	"github.com/angerer/claude_git/internal/enforce"
 	"github.com/angerer/claude_git/internal/environment"
 	"github.com/stretchr/testify/require"
 )
@@ -162,6 +163,21 @@ func TestMaterialize_NonIsolatedHasNoMCP(t *testing.T) {
 
 	_, err := os.Stat(filepath.Join(dest, "mcp.json"))
 	require.True(t, os.IsNotExist(err), "non-isolated persona must not get an mcp.json")
+}
+
+// Materialize <-> Verify consistency: a freshly materialized dir must pass
+// Verify with Clean=true, against the real production code on both sides. This
+// is the contract the whole isolation core rests on.
+func TestMaterialize_VerifyRoundTrip(t *testing.T) {
+	e := seedRepo(t, "reviewer")
+	rm := reviewerManifest()
+	dest := filepath.Join(t.TempDir(), "cfg")
+	require.NoError(t, Materialize(e, rm, dest))
+
+	personaDir := filepath.Join(environment.RepoDir(e.Hash), "personas", rm.Persona.Name)
+	att, err := enforce.Verify(rm, personaDir, dest)
+	require.NoError(t, err, "Materialize output must satisfy Verify")
+	require.True(t, att.Clean)
 }
 
 func TestMaterialize_Idempotent(t *testing.T) {

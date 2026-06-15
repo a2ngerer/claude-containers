@@ -3,6 +3,7 @@ package enforce
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,11 +13,19 @@ import (
 	"github.com/angerer/claude_git/internal/domain"
 )
 
-// Verify asserts that destDir contains exactly the allowlisted skills/subagents
-// from rm and that its settings.json carries every deny rule BuildPermissions
-// would produce. It returns a domain.Attestation describing the activation. On
-// any drift it returns domain.ErrVerifyMismatch (wrapped) and Clean=false.
-func Verify(rm compose.ResolvedManifest, destDir string) (domain.Attestation, error) {
+// Verify asserts that destDir contains EXACTLY the artefacts a faithful
+// Materialize(rm) would have produced -- nothing more, nothing less. It is an
+// allowlist verifier: it builds the complete set of expected relative paths and
+// walks destDir; any file or directory not in that set, and any expected path
+// missing from disk, is a domain.ErrVerifyMismatch. settings.json is checked for
+// the exact allow set, every expected deny rule, and the expected permissionMode.
+//
+// personaDir is the persona's source tree in the repo
+// (<repo>/personas/<name>); the allowlisted skill trees there define which
+// files are legitimately part of each skill, so an injected file inside an
+// otherwise-allowed skill is still caught. It returns a domain.Attestation; on
+// any drift the error wraps domain.ErrVerifyMismatch and Clean=false.
+func Verify(rm compose.ResolvedManifest, personaDir, destDir string) (domain.Attestation, error) {
 	ps := BuildPermissions(rm.Enforcement)
 
 	att := domain.Attestation{
@@ -38,31 +47,27 @@ func Verify(rm compose.ResolvedManifest, destDir string) (domain.Attestation, er
 
 	var problems []string
 
-	// (1) skills present on disk must equal the allowlist exactly.
-	gotSkills, err := listDir(filepath.Join(destDir, "skills"))
+	// (1) Build the whitelist of expected relative paths and diff it against the
+	// actual destDir tree. This is the core fail-closed gate: anything on disk
+	// that Materialize would not have written is rejected.
+	expected, err := expectedPaths(rm, personaDir)
 	if err != nil {
-		return att, fmt.Errorf("read materialized skills: %w", err)
+		return att, err
 	}
-	if diff := setDiff(rm.Skills, gotSkills); diff != "" {
-		problems = append(problems, "skills "+diff)
+	if diff := diffTree(expected, destDir); diff != "" {
+		problems = append(problems, diff)
 	}
 
-	// (2) subagents present on disk must equal the allowlist exactly.
-	gotSubagents, err := listSubagents(filepath.Join(destDir, "agents"))
-	if err != nil {
-		return att, fmt.Errorf("read materialized agents: %w", err)
-	}
-	if diff := setDiff(rm.Subagents, gotSubagents); diff != "" {
-		problems = append(problems, "subagents "+diff)
+	// (2) settings.json must carry the exact allow set, every expected deny rule,
+	// and the expected permissionMode.
+	if msgs := verifySettings(filepath.Join(destDir, "settings.json"), ps); len(msgs) > 0 {
+		problems = append(problems, msgs...)
 	}
 
-	// (3) settings.json must contain every expected deny rule.
-	gotDeny, err := readDeny(filepath.Join(destDir, "settings.json"))
-	if err != nil {
-		return att, fmt.Errorf("read materialized settings: %w", err)
-	}
-	if missing := missingFrom(ps.Deny, gotDeny); len(missing) > 0 {
-		problems = append(problems, "missing deny rules: "+strings.Join(missing, ", "))
+	// (3) An isolated persona must declare its setting sources; an empty
+	// SettingSrc would let every settings source leak in at launch.
+	if domain.MCPIsolated(rm.Enforcement, rm.MCP) && len(rm.SettingSrc) == 0 {
+		problems = append(problems, "empty setting sources for isolated persona")
 	}
 
 	if len(problems) > 0 {
@@ -73,60 +78,156 @@ func Verify(rm compose.ResolvedManifest, destDir string) (domain.Attestation, er
 	return att, nil
 }
 
-// listDir returns the sorted names of immediate sub-entries of dir. A missing
-// dir yields an empty slice (no skills/agents materialized).
-func listDir(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if os.IsNotExist(err) {
-		return nil, nil
+// expectedPaths returns the set of relative paths (files and directories) that a
+// faithful Materialize(rm) writes into destDir. Skill file trees are read from
+// personaDir so injected files inside an allowed skill are detectable.
+func expectedPaths(rm compose.ResolvedManifest, personaDir string) (map[string]bool, error) {
+	exp := map[string]bool{
+		"CLAUDE.md":     true,
+		"settings.json": true,
 	}
-	if err != nil {
-		return nil, err
-	}
-	names := make([]string, 0, len(entries))
-	for _, e := range entries {
-		names = append(names, e.Name())
-	}
-	sort.Strings(names)
-	return names, nil
-}
 
-// listSubagents returns sorted subagent basenames (without the .md suffix) found
-// in dir.
-func listSubagents(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if os.IsNotExist(err) {
-		return nil, nil
+	// Skills: the allowlisted skill directory plus every file/dir Materialize
+	// would have copied from the persona source tree.
+	if len(rm.Skills) > 0 {
+		exp["skills"] = true
 	}
-	if err != nil {
-		return nil, err
-	}
-	names := make([]string, 0, len(entries))
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
+	for _, name := range rm.Skills {
+		if !filepath.IsLocal(name) {
+			return nil, fmt.Errorf("%w: invalid skill name %q", domain.ErrVerifyMismatch, name)
 		}
-		names = append(names, strings.TrimSuffix(e.Name(), ".md"))
+		rel := filepath.Join("skills", name)
+		exp[rel] = true
+		srcSkill := filepath.Join(personaDir, "skills", name)
+		err := filepath.WalkDir(srcSkill, func(p string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			r, err := filepath.Rel(srcSkill, p)
+			if err != nil {
+				return err
+			}
+			if r == "." {
+				return nil
+			}
+			exp[filepath.Join(rel, r)] = true
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("read expected skill tree %q: %w", name, err)
+		}
 	}
-	sort.Strings(names)
-	return names, nil
+
+	// Subagents: agents/<name>.md, and the agents/ dir itself.
+	if len(rm.Subagents) > 0 {
+		exp["agents"] = true
+	}
+	for _, name := range rm.Subagents {
+		if !filepath.IsLocal(name) {
+			return nil, fmt.Errorf("%w: invalid subagent name %q", domain.ErrVerifyMismatch, name)
+		}
+		exp[filepath.Join("agents", name+".md")] = true
+	}
+
+	// mcp.json is expected iff Materialize would have written one: the persona
+	// ships its own config, or it is MCP-isolated (read-only / Strict).
+	if rm.MCP.Config != "" || domain.MCPIsolated(rm.Enforcement, rm.MCP) {
+		exp["mcp.json"] = true
+	}
+
+	return exp, nil
 }
 
-// readDeny extracts permissions.deny from a settings.json file.
-func readDeny(path string) ([]string, error) {
+// diffTree walks destDir and compares it against the expected path set. It
+// returns "" when they match exactly, otherwise a description listing
+// unexpected (smuggled) and missing entries.
+func diffTree(expected map[string]bool, destDir string) string {
+	seen := make(map[string]bool, len(expected))
+	var unexpected []string
+
+	err := filepath.WalkDir(destDir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(destDir, p)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		// A symlink in the materialized dir is never expected; treat it as
+		// unexpected and do not descend into it.
+		if d.Type()&fs.ModeSymlink != 0 {
+			unexpected = append(unexpected, rel+" (symlink)")
+			return nil
+		}
+		if expected[rel] {
+			seen[rel] = true
+			return nil
+		}
+		unexpected = append(unexpected, rel)
+		return nil
+	})
+	if err != nil {
+		return "walk dest dir: " + err.Error()
+	}
+
+	var missing []string
+	for e := range expected {
+		if !seen[e] {
+			missing = append(missing, e)
+		}
+	}
+
+	if len(unexpected) == 0 && len(missing) == 0 {
+		return ""
+	}
+	sort.Strings(unexpected)
+	sort.Strings(missing)
+	parts := []string{}
+	if len(unexpected) > 0 {
+		parts = append(parts, "unexpected paths: "+strings.Join(unexpected, ", "))
+	}
+	if len(missing) > 0 {
+		parts = append(parts, "missing paths: "+strings.Join(missing, ", "))
+	}
+	return strings.Join(parts, "; ")
+}
+
+// settingsShape is the subset of settings.json that Verify enforces.
+type settingsShape struct {
+	Permissions struct {
+		Allow []string `json:"allow"`
+		Deny  []string `json:"deny"`
+	} `json:"permissions"`
+	PermissionMode string `json:"permissionMode"`
+}
+
+// verifySettings checks settings.json against the expected permission set:
+// allow must match exactly (set equality), every expected deny rule must be
+// present, and permissionMode must equal the expected mode.
+func verifySettings(path string, ps PermissionSet) []string {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return []string{"read settings.json: " + err.Error()}
 	}
-	var sf struct {
-		Permissions struct {
-			Deny []string `json:"deny"`
-		} `json:"permissions"`
-	}
+	var sf settingsShape
 	if err := json.Unmarshal(data, &sf); err != nil {
-		return nil, fmt.Errorf("parse settings.json: %w", err)
+		return []string{"parse settings.json: " + err.Error()}
 	}
-	return sf.Permissions.Deny, nil
+
+	var msgs []string
+	if d := setDiff(ps.Allow, sf.Permissions.Allow); d != "" {
+		msgs = append(msgs, "allow "+d)
+	}
+	if missing := missingFrom(ps.Deny, sf.Permissions.Deny); len(missing) > 0 {
+		msgs = append(msgs, "missing deny rules: "+strings.Join(missing, ", "))
+	}
+	if sf.PermissionMode != ps.Mode {
+		msgs = append(msgs, fmt.Sprintf("permissionMode %q != expected %q", sf.PermissionMode, ps.Mode))
+	}
+	return msgs
 }
 
 // setDiff returns "" if want and got contain the same elements (order-independent),
