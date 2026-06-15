@@ -236,6 +236,29 @@ func formatTimeline(e *environment.Environment, persona string) (string, error) 
 	return b.String(), nil
 }
 
+// resolveManifestRef composes a persona ref into a ResolvedManifest. For M2 the
+// ref is a bare persona name; ":version" / snapshot refs are resolved by the
+// versioning commands directly and are not handled here.
+func resolveManifestRef(e *environment.Environment, ref string) (compose.ResolvedManifest, error) {
+	return compose.Compose(e, ref)
+}
+
+// formatCapabilityDiff renders a CapabilityDiff for the terminal.
+func formatCapabilityDiff(d compose.CapabilityDiff) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Capability diff: %s  vs  %s\n", d.NameA, d.NameB)
+	section := func(label string, onlyA, onlyB []string) {
+		fmt.Fprintf(&b, "  %s\n", label)
+		fmt.Fprintf(&b, "    only in %s: %s\n", d.NameA, joinOrNone(onlyA))
+		fmt.Fprintf(&b, "    only in %s: %s\n", d.NameB, joinOrNone(onlyB))
+	}
+	section("Skills", d.SkillsOnlyA, d.SkillsOnlyB)
+	section("Subagents", d.SubagentsOnlyA, d.SubagentsOnlyB)
+	section("Tools allowed", d.AllowOnlyA, d.AllowOnlyB)
+	section("Tools denied", d.DenyOnlyA, d.DenyOnlyB)
+	return b.String()
+}
+
 // scaffoldPersona materializes a persona template into personas/<name>/ in the
 // repo. The persona's name is forced to `name`. Refuses to overwrite.
 func scaffoldPersona(e *environment.Environment, name string, sc personaScaffold) error {

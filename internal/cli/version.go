@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/angerer/claude_git/internal/environment"
+	"github.com/angerer/claude_git/internal/compose"
 )
 
 // newSnapshotCmd builds the `snapshot` command (alias `commit`).
@@ -62,5 +62,41 @@ func newLogCmd(open envOpener) *cobra.Command {
 	}
 }
 
-// Keep environment import used by later commands in this file.
-var _ = (*environment.Environment)(nil)
+// newDiffCmd builds the `diff` command (capability diff).
+func newDiffCmd(open envOpener) *cobra.Command {
+	return &cobra.Command{
+		Use:   "diff [a] [b]",
+		Short: "Capability diff between two personas",
+		Args:  cobra.MaximumNArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			env, err := open()
+			if err != nil {
+				return err
+			}
+			var refA, refB string
+			switch len(args) {
+			case 2:
+				refA, refB = args[0], args[1]
+			case 1:
+				active := env.ActivePersona()
+				if active == "" {
+					return fmt.Errorf("one argument given but no active persona to compare against")
+				}
+				refA, refB = active, args[0]
+			default:
+				return fmt.Errorf("diff requires two persona names (or one, compared to the active persona)")
+			}
+			a, err := resolveManifestRef(env, refA)
+			if err != nil {
+				return err
+			}
+			b, err := resolveManifestRef(env, refB)
+			if err != nil {
+				return err
+			}
+			fmt.Fprint(cmd.OutOrStdout(), formatCapabilityDiff(compose.Diff(a, b)))
+			return nil
+		},
+	}
+}
+

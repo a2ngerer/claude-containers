@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/angerer/claude_git/internal/domain"
 	"github.com/angerer/claude_git/internal/environment"
 	"github.com/stretchr/testify/require"
 )
@@ -101,4 +102,36 @@ func indexOf(s, sub string) int {
 		}
 	}
 	return -1
+}
+
+func runDiff(t *testing.T, env *environment.Environment, args ...string) (string, error) {
+	t.Helper()
+	cmd := newDiffCmd(func() (*environment.Environment, error) { return env, nil })
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+func TestDiffCmd_CapabilityDelta(t *testing.T) {
+	env := newVerTestEnv(t)
+	base := domain.Persona{
+		Name:   "_base",
+		Config: domain.Config{ClaudeMD: "CLAUDE.md", Skills: domain.SkillSet{Mode: "allowlist", Include: []string{"shared"}}},
+	}
+	require.NoError(t, env.SavePersona(base))
+	_, err := runNew(t, env, "coder", "--template", "coder")
+	require.NoError(t, err)
+	_, err = runNew(t, env, "reviewer", "--template", "reviewer")
+	require.NoError(t, err)
+
+	out, err := runDiff(t, env, "coder", "reviewer")
+	require.NoError(t, err)
+
+	require.Contains(t, out, "coder")
+	require.Contains(t, out, "reviewer")
+	require.Contains(t, out, "security-review") // only in reviewer
+	require.Contains(t, out, "Write")           // allow-only-in-coder OR deny-only-in-reviewer
 }
