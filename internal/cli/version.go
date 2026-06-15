@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"github.com/angerer/claude_git/internal/compose"
+	"github.com/angerer/claude_git/internal/domain"
 	"github.com/angerer/claude_git/internal/environment"
 	"github.com/angerer/claude_git/internal/storage"
 )
@@ -152,7 +154,10 @@ func newTagCmd(open envOpener) *cobra.Command {
 				return err
 			}
 			persona, version := args[0], args[1]
-			ids, _ := env.Store.Timeline(persona)
+			ids, err := env.Store.Timeline(persona)
+			if err != nil && !errors.Is(err, domain.ErrPersonaNotFound) {
+				return fmt.Errorf("cannot read timeline for %q: %w", persona, err)
+			}
 			if len(ids) == 0 {
 				return fmt.Errorf("cannot tag %q: no snapshots yet (run: claude_git snapshot %s)", persona, persona)
 			}
