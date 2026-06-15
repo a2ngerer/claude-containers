@@ -81,6 +81,12 @@ func Create(workspace string) (*Environment, error) {
 	if err != nil {
 		return nil, fmt.Errorf("resolve workspace %q: %w", workspace, err)
 	}
+	// EvalSymlinks resolves macOS /var -> /private/var so the hash is stable
+	// regardless of whether the caller passes a symlinked or canonical path.
+	abs, err = filepath.EvalSymlinks(abs)
+	if err != nil {
+		return nil, fmt.Errorf("resolve symlinks for workspace %q: %w", workspace, err)
+	}
 	abs = filepath.Clean(abs)
 	hash := WorkspaceHash(abs)
 
@@ -108,6 +114,11 @@ func Open(workspace string) (*Environment, error) {
 	abs, err := filepath.Abs(workspace)
 	if err != nil {
 		return nil, fmt.Errorf("resolve workspace %q: %w", workspace, err)
+	}
+	// EvalSymlinks resolves macOS /var -> /private/var for a stable hash.
+	abs, err = filepath.EvalSymlinks(abs)
+	if err != nil {
+		return nil, fmt.Errorf("resolve symlinks for workspace %q: %w", workspace, err)
 	}
 	abs = filepath.Clean(abs)
 	hash := WorkspaceHash(abs)

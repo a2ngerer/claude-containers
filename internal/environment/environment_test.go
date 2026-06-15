@@ -17,18 +17,22 @@ func setupHome(t *testing.T) {
 func TestCreate_MakesDirsAndConfig(t *testing.T) {
 	setupHome(t)
 	ws := t.TempDir()
+	// EvalSymlinks is now applied inside Create/Open; resolve here too so the
+	// expected values match the canonical path (macOS /var -> /private/var).
+	wsReal, err := filepath.EvalSymlinks(ws)
+	require.NoError(t, err)
 
 	env, err := Create(ws)
 	require.NoError(t, err)
-	require.Equal(t, WorkspaceHash(filepath.Clean(ws)), env.Hash)
-	require.Equal(t, filepath.Clean(ws), env.Workspace)
+	require.Equal(t, WorkspaceHash(filepath.Clean(wsReal)), env.Hash)
+	require.Equal(t, filepath.Clean(wsReal), env.Workspace)
 	require.NotNil(t, env.Store)
 
 	// re-open must succeed and report the same workspace
 	reopened, err := Open(ws)
 	require.NoError(t, err)
 	require.Equal(t, env.Hash, reopened.Hash)
-	require.Equal(t, filepath.Clean(ws), reopened.Workspace)
+	require.Equal(t, filepath.Clean(wsReal), reopened.Workspace)
 }
 
 func TestOpen_NotInitialized(t *testing.T) {

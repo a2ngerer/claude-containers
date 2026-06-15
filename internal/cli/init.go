@@ -42,7 +42,13 @@ func resolveWorkspace(cmd *cobra.Command) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve workspace %q: %w", ws, err)
 	}
-	return filepath.Clean(abs), nil
+	// EvalSymlinks resolves macOS /var -> /private/var so the workspace hash
+	// matches the one computed by openCWD (which also calls EvalSymlinks).
+	resolved, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return "", fmt.Errorf("resolve symlinks for workspace %q: %w", ws, err)
+	}
+	return filepath.Clean(resolved), nil
 }
 
 func runInit(out io.Writer, workspace string) error {
