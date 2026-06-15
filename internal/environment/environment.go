@@ -97,6 +97,11 @@ func Create(workspace string) (*Environment, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open storage: %w", err)
 	}
+	// Write the secret-safe .gitignore eagerly: it must protect from the very
+	// first snapshot, not lazily at push time. See clone.go:writeGitignore.
+	if err := writeGitignore(RepoDir(hash)); err != nil {
+		return nil, err
+	}
 	cfg := EnvConfig{
 		WorkspacePath: abs,
 		ActivePersona: "",
