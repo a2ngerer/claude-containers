@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,4 +64,65 @@ func TestScaffoldPersona_WritesTOMLandMD(t *testing.T) {
 	// second scaffold with the same name is rejected
 	err = scaffoldPersona(env, "rev1", sc)
 	require.ErrorIs(t, err, domain.ErrPersonaExists)
+}
+
+func runNew(t *testing.T, env *environment.Environment, args ...string) (string, error) {
+	t.Helper()
+	cmd := newNewCmd(func() (*environment.Environment, error) { return env, nil })
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+func TestNewCmd_DefaultExtendsBase(t *testing.T) {
+	env := newTestEnv(t)
+	_, err := runNew(t, env, "blank")
+	require.NoError(t, err)
+
+	p, err := env.LoadPersona("blank")
+	require.NoError(t, err)
+	require.Equal(t, "_base", p.Extends)
+}
+
+func TestNewCmd_TemplateCoder(t *testing.T) {
+	env := newTestEnv(t)
+	_, err := runNew(t, env, "c1", "--template", "coder")
+	require.NoError(t, err)
+
+	p, err := env.LoadPersona("c1")
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{"Read", "Grep", "Glob", "Write", "Edit", "Bash"}, p.Enforcement.ToolsAllow)
+	require.Equal(t, []string{"user", "project", "local"}, p.Config.SettingSources)
+}
+
+func TestNewCmd_ExtendsOverride(t *testing.T) {
+	env := newTestEnv(t)
+	_, err := runNew(t, env, "x1", "--template", "reviewer", "--extends", "_custom")
+	require.NoError(t, err)
+
+	p, err := env.LoadPersona("x1")
+	require.NoError(t, err)
+	require.Equal(t, "_custom", p.Extends)
+}
+
+func TestNewCmd_FromCopiesPersona(t *testing.T) {
+	env := newTestEnv(t)
+	_, err := runNew(t, env, "src", "--template", "reviewer")
+	require.NoError(t, err)
+
+	_, err = runNew(t, env, "dst", "--from", "src")
+	require.NoError(t, err)
+
+	p, err := env.LoadPersona("dst")
+	require.NoError(t, err)
+	require.Equal(t, "read-only", p.Enforcement.PermissionMode) // copied from src
+}
+
+func TestNewCmd_TemplateAndFromConflict(t *testing.T) {
+	env := newTestEnv(t)
+	_, err := runNew(t, env, "bad", "--template", "coder", "--from", "src")
+	require.Error(t, err)
 }
