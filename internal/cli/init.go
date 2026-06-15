@@ -10,21 +10,40 @@ import (
 	"github.com/angerer/claude_git/internal/domain"
 	"github.com/angerer/claude_git/internal/environment"
 	"github.com/angerer/claude_git/internal/probe"
+	"github.com/angerer/claude_git/internal/share"
 	"github.com/spf13/cobra"
 )
 
 func newInitCmd() *cobra.Command {
-	return &cobra.Command{
+	var fromRemote string
+	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Bind the current workspace and seed the _base persona",
+		Short: "Bind the current workspace and seed the _base persona (or clone with --from)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ws, err := resolveWorkspace(cmd)
 			if err != nil {
 				return err
 			}
+			// --from onboards a team's existing persona repo. It fully replaces the
+			// local seed path: cloning brings the shared _base verbatim, and
+			// re-seeding from this machine's .claude/ would pollute that baseline
+			// (spec §11: seed _base OR clone, never both).
+			if fromRemote != "" {
+				env, err := share.Clone(fromRemote, ws)
+				if err != nil {
+					return err
+				}
+				fmt.Fprintf(cmd.OutOrStdout(),
+					"Onboarded from %q into a new environment for %s.\nRun `claude_git list` to see available personas.\n",
+					fromRemote, env.Workspace)
+				return nil
+			}
 			return runInit(cmd.OutOrStdout(), ws)
 		},
 	}
+	cmd.Flags().StringVar(&fromRemote, "from", "",
+		"clone an existing persona repo from this git remote instead of seeding _base")
+	return cmd
 }
 
 // resolveWorkspace reads the --workspace flag from the persistent root flags,

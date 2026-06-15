@@ -17,6 +17,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/filemode"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 )
 
 const (
@@ -407,7 +408,11 @@ func (g *GitStorageEngine) Pull(remote string) error {
 			"refs/tags/*:refs/tags/*",
 		},
 	})
-	if err != nil && err != git.NoErrAlreadyUpToDate {
+	// A brand-new remote (e.g. an empty repo created for `init --from`) has
+	// nothing to fetch yet: that is a no-op, not a failure.
+	if err != nil &&
+		!errors.Is(err, git.NoErrAlreadyUpToDate) &&
+		!errors.Is(err, transport.ErrEmptyRemoteRepository) {
 		return fmt.Errorf("pull from %s: %w", remote, err)
 	}
 	return nil

@@ -62,5 +62,8 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newDeactivateCmd())
 	root.AddCommand(newVerifyCmd())
 
+	// M4 sharing commands
+	root.AddCommand(newPushCmd(), newPullCmd(), newCloneCmd())
+
 	return root
 }
