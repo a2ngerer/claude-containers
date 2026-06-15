@@ -8,40 +8,10 @@ import (
 	"strings"
 	"time"
 
-	toml "github.com/pelletier/go-toml/v2"
-
 	"github.com/angerer/claude_git/internal/compose"
 	"github.com/angerer/claude_git/internal/domain"
 	"github.com/angerer/claude_git/internal/environment"
 )
-
-// tomlPersona mirrors the [enforcement.tools] sub-table that domain.Enforcement
-// keeps out of struct tags (ToolsAllow/ToolsDeny are toml:"-"). Used only for
-// loading and encoding persona.toml against the domain type.
-type tomlPersona struct {
-	domain.Persona
-	Enforcement struct {
-		domain.Enforcement
-		Tools struct {
-			Allow []string `toml:"allow"`
-			Deny  []string `toml:"deny"`
-		} `toml:"tools"`
-	} `toml:"enforcement"`
-}
-
-// parsePersonaTOML decodes a persona.toml body into a domain.Persona, mapping
-// the [enforcement.tools] allow/deny lists into ToolsAllow/ToolsDeny.
-func parsePersonaTOML(body []byte) (domain.Persona, error) {
-	var tp tomlPersona
-	if err := toml.Unmarshal(body, &tp); err != nil {
-		return domain.Persona{}, fmt.Errorf("parse persona toml: %w", err)
-	}
-	p := tp.Persona
-	p.Enforcement = tp.Enforcement.Enforcement
-	p.Enforcement.ToolsAllow = tp.Enforcement.Tools.Allow
-	p.Enforcement.ToolsDeny = tp.Enforcement.Tools.Deny
-	return p, nil
-}
 
 // copyPersonaScaffold builds a personaScaffold from an existing persona's
 // saved manifest and its on-disk CLAUDE.md, for `new --from`.
@@ -59,26 +29,11 @@ func copyPersonaScaffold(e *environment.Environment, src string) (personaScaffol
 	if err == nil {
 		md = string(b)
 	}
-	body, err := encodePersonaTOML(p)
+	raw, err := domain.MarshalPersonaTOML(p)
 	if err != nil {
 		return personaScaffold{}, err
 	}
-	return personaScaffold{TOML: body, ClaudeMD: md}, nil
-}
-
-// encodePersonaTOML serializes a domain.Persona to a persona.toml body,
-// including the [enforcement.tools] sub-table.
-func encodePersonaTOML(p domain.Persona) (string, error) {
-	var tp tomlPersona
-	tp.Persona = p
-	tp.Enforcement.Enforcement = p.Enforcement
-	tp.Enforcement.Tools.Allow = p.Enforcement.ToolsAllow
-	tp.Enforcement.Tools.Deny = p.Enforcement.ToolsDeny
-	b, err := toml.Marshal(tp)
-	if err != nil {
-		return "", fmt.Errorf("encode persona toml: %w", err)
-	}
-	return string(b), nil
+	return personaScaffold{TOML: string(raw), ClaudeMD: md}, nil
 }
 
 // withheldBaseSkills returns base-layer skills that the composed manifest does
@@ -286,7 +241,7 @@ func scaffoldPersona(e *environment.Environment, name string, sc personaScaffold
 	if _, err := e.LoadPersona(name); err == nil {
 		return fmt.Errorf("%q: %w", name, domain.ErrPersonaExists)
 	}
-	p, err := parsePersonaTOML([]byte(sc.TOML))
+	p, err := domain.ParsePersonaTOML([]byte(sc.TOML))
 	if err != nil {
 		return err
 	}
