@@ -3,6 +3,7 @@ module github.com/angerer/claude_git
 go 1.23
 
 require (
+	github.com/pelletier/go-toml/v2 v2.2.3
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 )
