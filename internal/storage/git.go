@@ -2,6 +2,7 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -253,6 +254,8 @@ func (g *GitStorageEngine) ReadSnapshot(id domain.SnapshotID) (domain.Snapshot, 
 
 // personaForCommit finds which persona ref currently reaches the given commit.
 // Best-effort; returns empty string if no persona ref covers it.
+// TODO(M2): nondeterministic when multiple personas share an identical tree hash;
+// will be resolved by encoding persona name in the commit message/metadata.
 func (g *GitStorageEngine) personaForCommit(h plumbing.Hash) string {
 	refs, err := g.repo.Storer.IterReferences()
 	if err != nil {
@@ -260,7 +263,7 @@ func (g *GitStorageEngine) personaForCommit(h plumbing.Hash) string {
 	}
 	defer refs.Close()
 	found := ""
-	_ = refs.ForEach(func(ref *plumbing.Reference) error {
+	err = refs.ForEach(func(ref *plumbing.Reference) error {
 		name := ref.Name().String()
 		if !strings.HasPrefix(name, personaRefPrefix) {
 			return nil
@@ -278,8 +281,14 @@ func (g *GitStorageEngine) personaForCommit(h plumbing.Hash) string {
 			}
 			return nil
 		})
+		if found != "" {
+			return storer.ErrStop
+		}
 		return nil
 	})
+	if err != nil && !errors.Is(err, storer.ErrStop) {
+		return ""
+	}
 	return found
 }
 
@@ -289,6 +298,9 @@ func (g *GitStorageEngine) Timeline(persona string) ([]domain.SnapshotID, error)
 		plumbing.ReferenceName(personaRefPrefix + persona),
 	)
 	if err != nil {
+		if errors.Is(err, plumbing.ErrReferenceNotFound) {
+			return nil, fmt.Errorf("no timeline for persona %q: %w", persona, domain.ErrPersonaNotFound)
+		}
 		return nil, fmt.Errorf("resolve persona ref %s: %w", persona, err)
 	}
 	iter, err := g.repo.Log(&git.LogOptions{From: ref.Hash()})
@@ -324,6 +336,9 @@ func (g *GitStorageEngine) ResolveTag(persona, version string) (domain.SnapshotI
 		plumbing.ReferenceName(tagRefPrefix + persona + "/" + version),
 	)
 	if err != nil {
+		if errors.Is(err, plumbing.ErrReferenceNotFound) {
+			return "", fmt.Errorf("version %q not found for persona %q: %w", version, persona, domain.ErrPersonaNotFound)
+		}
 		return "", fmt.Errorf("resolve tag %s/%s: %w", persona, version, err)
 	}
 	return domain.SnapshotID(ref.Hash().String()), nil

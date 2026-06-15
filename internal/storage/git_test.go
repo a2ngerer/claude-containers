@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -148,6 +149,20 @@ func TestTags_SetResolveList(t *testing.T) {
 	}
 	sort.Strings(versions)
 	require.Equal(t, []string{"1.2.0", "latest"}, versions)
+}
+
+func TestTimeline_NonexistentPersona_ReturnsErrPersonaNotFound(t *testing.T) {
+	e := newTestEngine(t)
+	_, err := e.Timeline("nonexistent")
+	require.Error(t, err)
+	require.True(t, errors.Is(err, domain.ErrPersonaNotFound), "expected ErrPersonaNotFound, got: %v", err)
+}
+
+func TestResolveTag_NonexistentPersonaVersion_ReturnsErrPersonaNotFound(t *testing.T) {
+	e := newTestEngine(t)
+	_, err := e.ResolveTag("nonexistent", "1.0.0")
+	require.Error(t, err)
+	require.True(t, errors.Is(err, domain.ErrPersonaNotFound), "expected ErrPersonaNotFound, got: %v", err)
 }
 
 func TestAddRemote_Persists(t *testing.T) {
