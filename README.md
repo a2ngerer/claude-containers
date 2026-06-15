@@ -7,6 +7,7 @@
 **Version, swap, and share the config layer that shapes how your agent thinks —
 `CLAUDE.md` plus `.claude/` — as isolated, named personas.**
 
+[![Website](https://img.shields.io/badge/website-live-d97757.svg)](https://claude_containers.alexanderangerer.com)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](go.mod)
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
