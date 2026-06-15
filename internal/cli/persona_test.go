@@ -126,3 +126,37 @@ func TestNewCmd_TemplateAndFromConflict(t *testing.T) {
 	_, err := runNew(t, env, "bad", "--template", "coder", "--from", "src")
 	require.Error(t, err)
 }
+
+func runShow(t *testing.T, env *environment.Environment, args ...string) (string, error) {
+	t.Helper()
+	cmd := newShowCmd(func() (*environment.Environment, error) { return env, nil })
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+func TestShowCmd_RendersCapabilities(t *testing.T) {
+	env := newTestEnv(t)
+	// seed a _base layer with a build skill that the reviewer will withhold
+	base := domain.Persona{
+		Name:   "_base",
+		Config: domain.Config{ClaudeMD: "CLAUDE.md", Skills: domain.SkillSet{Mode: "allowlist", Include: []string{"superpowers"}}},
+	}
+	require.NoError(t, env.SavePersona(base))
+	_, err := runNew(t, env, "reviewer", "--template", "reviewer")
+	require.NoError(t, err)
+
+	out, err := runShow(t, env, "reviewer")
+	require.NoError(t, err)
+
+	require.Contains(t, out, "Persona: reviewer")
+	require.Contains(t, out, "security-review") // active skill
+	require.Contains(t, out, "code-reviewer")   // active subagent
+	require.Contains(t, out, "Write")           // denied tool listed
+	require.Contains(t, out, "Withheld")        // withheld section present
+	require.Contains(t, out, "superpowers")     // base skill withheld by replace mode
+	require.Contains(t, out, "user, project")   // setting sources
+}
