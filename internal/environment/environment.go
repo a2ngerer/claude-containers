@@ -152,8 +152,11 @@ func (e *Environment) ListPersonas() ([]domain.Persona, error) {
 // LoadPersona reads a persona by name. Returns domain.ErrPersonaNotFound when absent.
 func (e *Environment) LoadPersona(name string) (domain.Persona, error) {
 	path := filepath.Join(personaDir(e.Hash, name), "persona.toml")
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		return domain.Persona{}, fmt.Errorf("%q: %w", name, domain.ErrPersonaNotFound)
+	if _, err := os.Stat(path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return domain.Persona{}, fmt.Errorf("%q: %w", name, domain.ErrPersonaNotFound)
+		}
+		return domain.Persona{}, fmt.Errorf("stat persona %q: %w", name, err)
 	}
 	return domain.LoadPersonaTOML(path)
 }
