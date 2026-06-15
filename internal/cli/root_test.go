@@ -31,3 +31,14 @@ func TestRootCmd_HelpDoesNotError(t *testing.T) {
 	cmd.SetArgs([]string{"--help"})
 	require.NoError(t, cmd.Execute())
 }
+
+func TestRoot_RegistersM2Commands(t *testing.T) {
+	root := NewRootCmd()
+	have := map[string]bool{}
+	for _, c := range root.Commands() {
+		have[c.Name()] = true
+	}
+	for _, name := range []string{"new", "show", "edit", "rm", "snapshot", "log", "diff", "rollback", "tag"} {
+		require.True(t, have[name], "root must register %q", name)
+	}
+}

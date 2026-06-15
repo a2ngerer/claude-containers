@@ -1,8 +1,21 @@
 package cli
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
+
+	"github.com/angerer/claude_git/internal/environment"
 )
+
+// openCWD opens the environment bound to the current working directory.
+func openCWD() (*environment.Environment, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	return environment.Open(wd)
+}
 
 // NewRootCmd builds the cobra root command with all global flags and the
 // M1 subcommands wired in. cmd/claude_git/main.go Execute()s the result.
@@ -19,9 +32,23 @@ func NewRootCmd() *cobra.Command {
 	// process working directory; tests and power users override it.
 	root.PersistentFlags().String("workspace", "", "workspace path (default: current directory)")
 
+	// M1 commands
 	root.AddCommand(newInitCmd())
 	root.AddCommand(newListCmd())
 	root.AddCommand(newStatusCmd())
+
+	// M2 persona commands
+	root.AddCommand(newNewCmd(openCWD))
+	root.AddCommand(newShowCmd(openCWD))
+	root.AddCommand(newEditCmd(openCWD))
+	root.AddCommand(newRmCmd(openCWD))
+
+	// M2 versioning commands
+	root.AddCommand(newSnapshotCmd(openCWD))
+	root.AddCommand(newLogCmd(openCWD))
+	root.AddCommand(newDiffCmd(openCWD))
+	root.AddCommand(newRollbackCmd(openCWD))
+	root.AddCommand(newTagCmd(openCWD))
 
 	return root
 }

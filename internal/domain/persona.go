@@ -70,16 +70,12 @@ type toolsWire struct {
 	Deny  []string `toml:"deny"`
 }
 
-// LoadPersonaTOML reads a persona.toml and maps [enforcement.tools] allow/deny
-// into Enforcement.ToolsAllow/ToolsDeny.
-func LoadPersonaTOML(path string) (Persona, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return Persona{}, fmt.Errorf("read persona toml %q: %w", path, err)
-	}
+// ParsePersonaTOML decodes a persona.toml body, mapping [enforcement.tools]
+// allow/deny into Enforcement.ToolsAllow/ToolsDeny.
+func ParsePersonaTOML(body []byte) (Persona, error) {
 	var w personaWire
-	if err := toml.Unmarshal(raw, &w); err != nil {
-		return Persona{}, fmt.Errorf("unmarshal persona toml %q: %w", path, err)
+	if err := toml.Unmarshal(body, &w); err != nil {
+		return Persona{}, fmt.Errorf("unmarshal persona toml: %w", err)
 	}
 	return Persona{
 		Name:        w.Name,
@@ -95,9 +91,9 @@ func LoadPersonaTOML(path string) (Persona, error) {
 	}, nil
 }
 
-// SavePersonaTOML writes a persona.toml, projecting Enforcement.ToolsAllow/ToolsDeny
-// back under [enforcement.tools].
-func SavePersonaTOML(p Persona, path string) error {
+// MarshalPersonaTOML encodes a Persona to TOML bytes, projecting
+// Enforcement.ToolsAllow/ToolsDeny back under [enforcement.tools].
+func MarshalPersonaTOML(p Persona) ([]byte, error) {
 	w := personaWire{
 		Name:        p.Name,
 		Description: p.Description,
@@ -114,7 +110,31 @@ func SavePersonaTOML(p Persona, path string) error {
 	}
 	out, err := toml.Marshal(w)
 	if err != nil {
-		return fmt.Errorf("marshal persona toml: %w", err)
+		return nil, fmt.Errorf("marshal persona toml: %w", err)
+	}
+	return out, nil
+}
+
+// LoadPersonaTOML reads a persona.toml and maps [enforcement.tools] allow/deny
+// into Enforcement.ToolsAllow/ToolsDeny.
+func LoadPersonaTOML(path string) (Persona, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return Persona{}, fmt.Errorf("read persona toml %q: %w", path, err)
+	}
+	p, err := ParsePersonaTOML(raw)
+	if err != nil {
+		return Persona{}, fmt.Errorf("parse persona toml %q: %w", path, err)
+	}
+	return p, nil
+}
+
+// SavePersonaTOML writes a persona.toml, projecting Enforcement.ToolsAllow/ToolsDeny
+// back under [enforcement.tools].
+func SavePersonaTOML(p Persona, path string) error {
+	out, err := MarshalPersonaTOML(p)
+	if err != nil {
+		return err
 	}
 	if err := os.WriteFile(path, out, 0o644); err != nil {
 		return fmt.Errorf("write persona toml %q: %w", path, err)
