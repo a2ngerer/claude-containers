@@ -27,18 +27,18 @@ func TestWorkspaceHash_DifferentPathsDiffer(t *testing.T) {
 }
 
 func TestToolHome_RespectsEnv(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", "/tmp/cg-home")
+	t.Setenv("ACON_HOME", "/tmp/cg-home")
 	require.Equal(t, "/tmp/cg-home", ToolHome())
 }
 
 func TestToolHome_DefaultUnderHome(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", "")
+	t.Setenv("ACON_HOME", "")
 	t.Setenv("HOME", "/tmp/fake-home")
-	require.Equal(t, filepath.Join("/tmp/fake-home", ".claude_git"), ToolHome())
+	require.Equal(t, filepath.Join("/tmp/fake-home", ".acon"), ToolHome())
 }
 
 func TestDerivedPaths(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", "/tmp/cg")
+	t.Setenv("ACON_HOME", "/tmp/cg")
 	hash := "abc123"
 	require.Equal(t, filepath.Join("/tmp/cg", "environments", hash), EnvDir(hash))
 	require.Equal(t, filepath.Join("/tmp/cg", "environments", hash, "repo"), RepoDir(hash))

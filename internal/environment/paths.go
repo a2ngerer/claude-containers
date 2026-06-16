@@ -15,17 +15,17 @@ func WorkspaceHash(absWorkspace string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// ToolHome returns the tool's root directory. CLAUDE_GIT_HOME overrides;
-// otherwise ~/.claude_git.
+// ToolHome returns the tool's root directory. ACON_HOME overrides;
+// otherwise ~/.acon.
 func ToolHome() string {
-	if h := os.Getenv("CLAUDE_GIT_HOME"); h != "" {
+	if h := os.Getenv("ACON_HOME"); h != "" {
 		return h
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		home = "."
 	}
-	return filepath.Join(home, ".claude_git")
+	return filepath.Join(home, ".acon")
 }
 
 // EnvDir is the per-workspace environment directory.

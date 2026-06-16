@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"

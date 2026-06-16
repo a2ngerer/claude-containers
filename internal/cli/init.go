@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/probe"
-	"github.com/a2ngerer/claude-containers/internal/share"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/probe"
+	"github.com/a2ngerer/agent-containers/internal/share"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +34,7 @@ func newInitCmd() *cobra.Command {
 					return err
 				}
 				fmt.Fprintf(cmd.OutOrStdout(),
-					"Onboarded from %q into a new environment for %s.\nRun `claude_git list` to see available personas.\n",
+					"Onboarded from %q into a new environment for %s.\nRun `acon list` to see available personas.\n",
 					fromRemote, env.Workspace)
 				return nil
 			}
@@ -81,12 +81,12 @@ func runInit(out io.Writer, workspace string) error {
 	}
 
 	// marker file: one line = workspace hash
-	marker := filepath.Join(workspace, ".claude_git")
+	marker := filepath.Join(workspace, ".acon")
 	if err := os.WriteFile(marker, []byte(env.Hash+"\n"), 0o644); err != nil {
 		return fmt.Errorf("write marker: %w", err)
 	}
 
-	fmt.Fprintf(out, "Initialized claude_git environment for %s\n", workspace)
+	fmt.Fprintf(out, "Initialized acon environment for %s\n", workspace)
 	fmt.Fprintf(out, "  hash:   %s\n", env.Hash)
 	fmt.Fprintf(out, "  base:   _base persona seeded from existing .claude/ and CLAUDE.md\n")
 
@@ -97,9 +97,9 @@ func runInit(out io.Writer, workspace string) error {
 	if tracked {
 		fmt.Fprintln(out, "")
 		fmt.Fprintln(out, "WARNING: .claude/ is tracked by this workspace's code repository.")
-		fmt.Fprintln(out, "  claude_git never writes into the workspace, so this is harmless to claude_git,")
+		fmt.Fprintln(out, "  acon never writes into the workspace, so this is harmless to acon,")
 		fmt.Fprintln(out, "  but you may want to untrack it (git rm -r --cached .claude) to avoid committing")
-		fmt.Fprintln(out, "  agent config into your code history. claude_git will not touch your code repo.")
+		fmt.Fprintln(out, "  agent config into your code history. acon will not touch your code repo.")
 	}
 	return nil
 }

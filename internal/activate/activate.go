@@ -8,11 +8,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/enforce"
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/materialize"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/materialize"
 )
 
 // verifyFn is the verify function used by Activate. It is a package-level

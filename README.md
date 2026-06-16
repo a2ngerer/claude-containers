@@ -1,13 +1,13 @@
 <div align="center">
 
-# Claude Containers
+# Agent Containers
 
 ### Docker for your Claude Code agents.
 
 **Version, swap, and share the config layer that shapes how your agent thinks —
 `CLAUDE.md` plus `.claude/` — as isolated, named personas.**
 
-[![Website](https://img.shields.io/badge/website-live-d97757.svg)](https://claude-containers.alexanderangerer.com)
+[![Website](https://img.shields.io/badge/website-live-d97757.svg)](https://agent-containers.alexanderangerer.com)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](go.mod)
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
@@ -26,7 +26,7 @@ blob** per machine. You cannot cleanly swap *"a coder loaded with build skills"*
 for *"a reviewer that deliberately lacks them"*, you cannot version those setups,
 and you cannot hand them to a teammate.
 
-**Claude Containers** treats that config layer as a versioned, swappable,
+**Agent Containers** treats that config layer as a versioned, swappable,
 shareable **persona** — a container. One workspace, many interchangeable agents,
 each tuned for one job. Switch with a single command. Snapshot it like code.
 Push it to your team.
@@ -34,7 +34,7 @@ Push it to your team.
 ```text
                        your workspace  (code repo — .claude/ is never touched)
                                    ▲
-                  claude_git use   │   swaps the active container
+                  acon use   │   swaps the active container
                                    │
    ┌──────────────┬────────────────┴───────────────┬──────────────────┐
    │   _base      │   coder                         │   reviewer       │
@@ -52,13 +52,13 @@ so containers can coexist with whatever is already there.
 ## The killer feature: an uncontaminated reviewer
 
 If the same agent that wrote the code also reviews it, its judgment is shaped by
-the very skills and habits that produced the bug. Claude Containers lets you build
+the very skills and habits that produced the bug. Agent Containers lets you build
 a reviewer that is **provably stripped** of the coder's powers — no build skills,
 no write access — and then *attests* it:
 
 ```console
-$ claude_git new reviewer --template reviewer
-$ claude_git verify reviewer
+$ acon new reviewer --template reviewer
+$ acon verify reviewer
 
 Persona: reviewer  (uncontaminated)   reviewer:0.1.0
   Skills:   code-review, security-audit
@@ -75,28 +75,28 @@ fails loudly if the materialized environment ever drifts from the manifest.
 
 ```bash
 # Build the CLI (Go 1.26+)
-go build -o claude_git ./cmd/claude_git
+go build -o acon ./cmd/acon
 
 # ...or install it directly
-go install github.com/a2ngerer/claude-containers/cmd/claude_git@latest
+go install github.com/a2ngerer/agent-containers/cmd/acon@latest
 ```
 
 ```bash
 # Bind the current workspace; seeds a _base persona from your existing
 # .claude/ and CLAUDE.md. Nothing in your repo is altered.
-claude_git init
+acon init
 
 # Scaffold a specialized container from an embedded template
-claude_git new coder    --template coder
-claude_git new reviewer --template reviewer
+acon new coder    --template coder
+acon new reviewer --template reviewer
 
 # Activate one. Prints the launch command (or use --exec to start Claude directly).
-claude_git use coder
-#   -> CLAUDE_CONFIG_DIR=~/.claude_git/cache/<hash>/coder claude
+acon use coder
+#   -> CLAUDE_CONFIG_DIR=~/.acon/cache/<hash>/coder claude
 #   Start (or restart) Claude Code in this directory to use this environment.
 
 # Swap to the reviewer for the review pass
-claude_git use reviewer
+acon use reviewer
 ```
 
 ## Versioning
@@ -104,11 +104,11 @@ claude_git use reviewer
 Every persona has its own immutable timeline — snapshot, inspect, tag, roll back.
 
 ```bash
-claude_git snapshot reviewer -m "tighten the security-audit checklist"
-claude_git log      reviewer            # snapshot history, newest first
-claude_git tag      reviewer 1.0.0      # SemVer tag on the newest snapshot
-claude_git rollback reviewer <snapshot> # restore a prior state as a new snapshot
-claude_git diff     coder reviewer      # capability delta between two personas
+acon snapshot reviewer -m "tighten the security-audit checklist"
+acon log      reviewer            # snapshot history, newest first
+acon tag      reviewer 1.0.0      # SemVer tag on the newest snapshot
+acon rollback reviewer <snapshot> # restore a prior state as a new snapshot
+acon diff     coder reviewer      # capability delta between two personas
 ```
 
 ## Sharing
@@ -120,11 +120,11 @@ scan is mandatory, not optional.
 
 ```bash
 # Maintainer: publish the team's personas
-claude_git push git@github.com:acme/agent-personas.git
+acon push git@github.com:acme/agent-personas.git
 
 # Teammate: onboard a fresh workspace straight from the shared repo
-claude_git init --from git@github.com:acme/agent-personas.git
-claude_git pull         # later: fetch updates
+acon init --from git@github.com:acme/agent-personas.git
+acon pull         # later: fetch updates
 ```
 
 ## Command reference
@@ -158,14 +158,14 @@ claude_git pull         # later: fetch updates
   forces strict MCP isolation, so a shared persona cannot smuggle in host files
   or a project's MCP servers.
 
-> The CLI is named `claude_git` — it is, at heart, git for your Claude config.
-> "Claude Containers" is the idea it serves: each persona is a container you swap
-> in for the task at hand.
+> `acon` is the **Agent Containers** CLI — at heart, git for your Claude config.
+> Each persona is a container you swap in for the task at hand: snapshot it, tag
+> it, share it, roll it back, just like code.
 
 ## Project layout
 
 ```text
-cmd/claude_git        CLI entrypoint
+cmd/acon        CLI entrypoint
 internal/domain       persona / snapshot / enforcement types
 internal/storage      git-backed StorageEngine
 internal/environment  workspace binding, CloneInto

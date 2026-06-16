@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 )
 
 // mcpFile is the minimal Claude Code mcp.json shape used only for the empty

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/a2ngerer/claude-containers/internal/activate"
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/activate"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/spf13/cobra"
 )
 
@@ -41,7 +41,7 @@ func DispatchArgs(args []string) []string {
 	return append([]string{"use"}, args...)
 }
 
-// newUseCmd builds `claude_git use <persona>`: compose, materialize, attest, and
+// newUseCmd builds `acon use <persona>`: compose, materialize, attest, and
 // either print the launch command (default) or exec claude directly (--exec).
 func newUseCmd() *cobra.Command {
 	var execDirect bool
@@ -70,7 +70,7 @@ func newUseCmd() *cobra.Command {
 	return cmd
 }
 
-// newDeactivateCmd builds `claude_git deactivate`: clear the active persona.
+// newDeactivateCmd builds `acon deactivate`: clear the active persona.
 func newDeactivateCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "deactivate",

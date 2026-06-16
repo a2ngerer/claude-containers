@@ -35,9 +35,9 @@
 
 ## Conventions for every task
 
-- Module path: `github.com/a2ngerer/claude-containers`.
-- Run all commands from the repo root `/Users/angeral/Repositories/claude_git`.
-- Tests isolate the tool home: every test sets `t.Setenv("CLAUDE_GIT_HOME", t.TempDir())` and seeds an environment via `environment.Create(t.TempDir())` (M1 API).
+- Module path: `github.com/a2ngerer/agent-containers`.
+- Run all commands from the repo root `/Users/angeral/Repositories/agent-containers`.
+- Tests isolate the tool home: every test sets `t.Setenv("ACON_HOME", t.TempDir())` and seeds an environment via `environment.Create(t.TempDir())` (M1 API).
 - Use `require` (fail-fast), never `assert`.
 - One commit per task; commit message in English; no `Co-Authored-By` trailer.
 - TDD order per task: (1) write failing test → (2) run, see it fail → (3) minimal impl → (4) run, see it pass → (5) commit.
@@ -64,9 +64,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -74,7 +74,7 @@ import (
 // and writes the given personas into the repo. Returns the open environment.
 func seedEnv(t *testing.T, personas ...domain.Persona) *environment.Environment {
 	t.Helper()
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	env, err := environment.Create(ws)
 	require.NoError(t, err)
@@ -142,7 +142,7 @@ func TestCompose_UnionAndScalarOverride(t *testing.T) {
 - [ ] **1.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/compose/ 2>&1 | head -20
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/compose/ 2>&1 | head -20
 ```
 
 Expected: build failure — `package compose ... no Go files` / `undefined: compose.Compose`.
@@ -160,8 +160,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // ResolvedManifest is the composed, effective configuration of a leaf persona.
@@ -255,15 +255,15 @@ func union(a, b []string) []string {
 - [ ] **1.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/compose/ 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/compose/ 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/compose`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/compose`.
 
 - [ ] **1.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/compose/compose.go internal/compose/compose_test.go && git commit -m "feat(compose): resolve persona + base layer with scalar override and skills/subagents union"
+cd /Users/angeral/Repositories/agent-containers && git add internal/compose/compose.go internal/compose/compose_test.go && git commit -m "feat(compose): resolve persona + base layer with scalar override and skills/subagents union"
 ```
 
 ---
@@ -338,7 +338,7 @@ func TestCompose_ExtendsLayerNotFound(t *testing.T) {
 - [ ] **2.2 — Run, see it fail (or pass).**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/compose/ -run 'Replace|NoExtends|LayerNotFound' 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/compose/ -run 'Replace|NoExtends|LayerNotFound' 2>&1 | tail -15
 ```
 
 Expected: `replace`/`NoExtends` pass immediately (Task 1 already implements both). `ExtendsLayerNotFound` could fail only if M1's `LoadPersona` returns an error that does not wrap into `domain.ErrLayerNotFound` — Task 1's mapping `fmt.Errorf("%w: %s", domain.ErrLayerNotFound, ...)` handles this. Confirm the failure (if any) names the missing layer.
@@ -348,15 +348,15 @@ Expected: `replace`/`NoExtends` pass immediately (Task 1 already implements both
 - [ ] **2.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/compose/ 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/compose/ 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/compose`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/compose`.
 
 - [ ] **2.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/compose/compose_test.go && git commit -m "test(compose): cover replace-mode, no-extends, and layer-not-found composition paths"
+cd /Users/angeral/Repositories/agent-containers && git add internal/compose/compose_test.go && git commit -m "test(compose): cover replace-mode, no-extends, and layer-not-found composition paths"
 ```
 
 ---
@@ -379,8 +379,8 @@ package compose_test
 import (
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -422,7 +422,7 @@ func TestDiff_CapabilityDelta(t *testing.T) {
 - [ ] **3.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/compose/ -run TestDiff 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/compose/ -run TestDiff 2>&1 | tail -15
 ```
 
 Expected: `undefined: compose.Diff` / `undefined: compose.CapabilityDiff`.
@@ -485,15 +485,15 @@ func onlyIn(a, b []string) []string {
 - [ ] **3.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/compose/ 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/compose/ 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/compose`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/compose`.
 
 - [ ] **3.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/compose/diff.go internal/compose/diff_test.go && git commit -m "feat(compose): add capability diff between two resolved manifests"
+cd /Users/angeral/Repositories/agent-containers && git add internal/compose/diff.go internal/compose/diff_test.go && git commit -m "feat(compose): add capability diff between two resolved manifests"
 ```
 
 ---
@@ -547,7 +547,7 @@ func TestPersonaTemplate_CoderAndReviewer(t *testing.T) {
 - [ ] **4.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestPersonaTemplate 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestPersonaTemplate 2>&1 | tail -15
 ```
 
 Expected: `undefined: personaTemplate`.
@@ -655,15 +655,15 @@ func personaTemplate(name string) (personaScaffold, bool) {
 - [ ] **4.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestPersonaTemplate 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestPersonaTemplate 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **4.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/templates.go internal/cli/persona_test.go && git commit -m "feat(cli): embed coder and reviewer persona templates"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/templates.go internal/cli/persona_test.go && git commit -m "feat(cli): embed coder and reviewer persona templates"
 ```
 
 ---
@@ -687,8 +687,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 ```
@@ -698,7 +698,7 @@ Then append:
 ```go
 func newTestEnv(t *testing.T) *environment.Environment {
 	t.Helper()
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	env, err := environment.Create(t.TempDir())
 	require.NoError(t, err)
 	return env
@@ -731,7 +731,7 @@ func TestScaffoldPersona_WritesTOMLandMD(t *testing.T) {
 - [ ] **5.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestScaffoldPersona 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestScaffoldPersona 2>&1 | tail -15
 ```
 
 Expected: `undefined: scaffoldPersona`.
@@ -748,8 +748,8 @@ import (
 
 	toml "github.com/pelletier/go-toml/v2"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // tomlPersona mirrors the [enforcement.tools] sub-table that domain.Enforcement
@@ -810,15 +810,15 @@ func scaffoldPersona(e *environment.Environment, name string, sc personaScaffold
 - [ ] **5.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestScaffoldPersona 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestScaffoldPersona 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **5.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/personahelpers.go internal/cli/persona_test.go && git commit -m "feat(cli): add scaffoldPersona + persona TOML parsing helper"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/personahelpers.go internal/cli/persona_test.go && git commit -m "feat(cli): add scaffoldPersona + persona TOML parsing helper"
 ```
 
 ---
@@ -902,7 +902,7 @@ func TestNewCmd_TemplateAndFromConflict(t *testing.T) {
 - [ ] **6.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestNewCmd 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestNewCmd 2>&1 | tail -15
 ```
 
 Expected: `undefined: newNewCmd`.
@@ -961,7 +961,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // envOpener resolves the bound environment for the current workspace. The CLI
@@ -1069,15 +1069,15 @@ author  = ""
 - [ ] **6.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestNewCmd 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestNewCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **6.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/persona.go internal/cli/personahelpers.go internal/cli/persona_test.go && git commit -m "feat(cli): add 'new' command with --template, --from, --extends"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/persona.go internal/cli/personahelpers.go internal/cli/persona_test.go && git commit -m "feat(cli): add 'new' command with --template, --from, --extends"
 ```
 
 ---
@@ -1134,12 +1134,12 @@ func TestShowCmd_RendersCapabilities(t *testing.T) {
 - [ ] **7.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestShowCmd 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestShowCmd 2>&1 | tail -15
 ```
 
 Expected: `undefined: newShowCmd`.
 
-- [ ] **7.3 — Minimal implementation.** Extend the import block of `internal/cli/personahelpers.go` to add `"sort"`, `"strings"`, and `"github.com/a2ngerer/claude-containers/internal/compose"`, then add:
+- [ ] **7.3 — Minimal implementation.** Extend the import block of `internal/cli/personahelpers.go` to add `"sort"`, `"strings"`, and `"github.com/a2ngerer/agent-containers/internal/compose"`, then add:
 
 ```go
 // withheldBaseSkills returns base-layer skills that the composed manifest does
@@ -1202,7 +1202,7 @@ func joinOrNone(xs []string) string {
 }
 ```
 
-Then extend the import block of `internal/cli/persona.go` to add `"github.com/a2ngerer/claude-containers/internal/compose"`, and add:
+Then extend the import block of `internal/cli/persona.go` to add `"github.com/a2ngerer/agent-containers/internal/compose"`, and add:
 
 ```go
 // newShowCmd builds the `show` command.
@@ -1230,15 +1230,15 @@ func newShowCmd(open envOpener) *cobra.Command {
 - [ ] **7.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestShowCmd 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestShowCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **7.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/persona.go internal/cli/personahelpers.go internal/cli/persona_test.go && git commit -m "feat(cli): add 'show' command rendering composed manifest + withheld skills"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/persona.go internal/cli/personahelpers.go internal/cli/persona_test.go && git commit -m "feat(cli): add 'show' command rendering composed manifest + withheld skills"
 ```
 
 ---
@@ -1307,7 +1307,7 @@ func TestPersonaTOMLPath(t *testing.T) {
 - [ ] **8.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run 'TestRmCmd|TestPersonaTOMLPath' 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run 'TestRmCmd|TestPersonaTOMLPath' 2>&1 | tail -15
 ```
 
 Expected: `undefined: newRmCmd` / `undefined: personaTOMLPath` (and possibly `env.ActivePersona undefined`).
@@ -1315,7 +1315,7 @@ Expected: `undefined: newRmCmd` / `undefined: personaTOMLPath` (and possibly `en
 - [ ] **8.3 — Minimal implementation.** First ensure the accessor exists. Check M1:
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && grep -n "func (e \*Environment) ActivePersona" internal/environment/environment.go || echo "MISSING -> add accessor"
+cd /Users/angeral/Repositories/agent-containers && grep -n "func (e \*Environment) ActivePersona" internal/environment/environment.go || echo "MISSING -> add accessor"
 ```
 
 If missing, add to `internal/environment/environment.go`:
@@ -1341,7 +1341,7 @@ func removePersona(e *environment.Environment, name string) error {
 		return err
 	}
 	if e.ActivePersona() == name {
-		return fmt.Errorf("cannot remove %q: it is the active persona (run: claude_git deactivate)", name)
+		return fmt.Errorf("cannot remove %q: it is the active persona (run: acon deactivate)", name)
 	}
 	dir := filepath.Join(environment.RepoDir(e.Hash), "personas", name)
 	if err := os.RemoveAll(dir); err != nil {
@@ -1404,15 +1404,15 @@ func newRmCmd(open envOpener) *cobra.Command {
 - [ ] **8.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run 'TestRmCmd|TestPersonaTOMLPath' 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run 'TestRmCmd|TestPersonaTOMLPath' 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **8.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/persona.go internal/cli/personahelpers.go internal/environment/environment.go internal/cli/persona_test.go && git commit -m "feat(cli): add 'edit' and 'rm' persona commands"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/persona.go internal/cli/personahelpers.go internal/environment/environment.go internal/cli/persona_test.go && git commit -m "feat(cli): add 'edit' and 'rm' persona commands"
 ```
 
 ---
@@ -1438,13 +1438,13 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
 func newVerTestEnv(t *testing.T) *environment.Environment {
 	t.Helper()
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	env, err := environment.Create(t.TempDir())
 	require.NoError(t, err)
 	return env
@@ -1500,7 +1500,7 @@ func TestSnapshotCmd_DefaultsToActivePersona(t *testing.T) {
 - [ ] **9.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestSnapshotCmd 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestSnapshotCmd 2>&1 | tail -15
 ```
 
 Expected: `undefined: newSnapshotCmd`.
@@ -1508,7 +1508,7 @@ Expected: `undefined: newSnapshotCmd`.
 - [ ] **9.3 — Minimal implementation.** First ensure the author accessor exists. Check M1:
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && grep -n "func (e \*Environment) Author" internal/environment/environment.go || echo "MISSING -> add accessor"
+cd /Users/angeral/Repositories/agent-containers && grep -n "func (e \*Environment) Author" internal/environment/environment.go || echo "MISSING -> add accessor"
 ```
 
 If missing, add to `internal/environment/environment.go` (return the configured author, or `""`):
@@ -1590,7 +1590,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // newSnapshotCmd builds the `snapshot` command (alias `commit`).
@@ -1628,15 +1628,15 @@ func newSnapshotCmd(open envOpener) *cobra.Command {
 - [ ] **9.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestSnapshotCmd 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestSnapshotCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **9.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/version.go internal/cli/personahelpers.go internal/environment/environment.go internal/cli/version_test.go && git commit -m "feat(cli): add 'snapshot' command writing tree + snapshot to the timeline"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/version.go internal/cli/personahelpers.go internal/environment/environment.go internal/cli/version_test.go && git commit -m "feat(cli): add 'snapshot' command writing tree + snapshot to the timeline"
 ```
 
 ---
@@ -1700,7 +1700,7 @@ func indexOf(s, sub string) int {
 - [ ] **10.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestLogCmd 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestLogCmd 2>&1 | tail -15
 ```
 
 Expected: `undefined: newLogCmd`.
@@ -1761,15 +1761,15 @@ func newLogCmd(open envOpener) *cobra.Command {
 - [ ] **10.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestLogCmd 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestLogCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **10.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/version.go internal/cli/personahelpers.go internal/cli/version_test.go && git commit -m "feat(cli): add 'log' command formatting the persona timeline"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/version.go internal/cli/personahelpers.go internal/cli/version_test.go && git commit -m "feat(cli): add 'log' command formatting the persona timeline"
 ```
 
 ---
@@ -1785,7 +1785,7 @@ cd /Users/angeral/Repositories/claude_git && git add internal/cli/version.go int
 
 ### Steps
 
-- [ ] **11.1 — Write the failing test.** Add `"github.com/a2ngerer/claude-containers/internal/domain"` to the import block of `internal/cli/version_test.go`, then append:
+- [ ] **11.1 — Write the failing test.** Add `"github.com/a2ngerer/agent-containers/internal/domain"` to the import block of `internal/cli/version_test.go`, then append:
 
 ```go
 func runDiff(t *testing.T, env *environment.Environment, args ...string) (string, error) {
@@ -1824,7 +1824,7 @@ func TestDiffCmd_CapabilityDelta(t *testing.T) {
 - [ ] **11.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestDiffCmd 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestDiffCmd 2>&1 | tail -15
 ```
 
 Expected: `undefined: newDiffCmd`.
@@ -1856,7 +1856,7 @@ func formatCapabilityDiff(d compose.CapabilityDiff) string {
 }
 ```
 
-Then add to `internal/cli/version.go` — extend its import block to add `"github.com/a2ngerer/claude-containers/internal/compose"`, then add:
+Then add to `internal/cli/version.go` — extend its import block to add `"github.com/a2ngerer/agent-containers/internal/compose"`, then add:
 
 ```go
 // newDiffCmd builds the `diff` command (capability diff).
@@ -1901,15 +1901,15 @@ func newDiffCmd(open envOpener) *cobra.Command {
 - [ ] **11.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestDiffCmd 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestDiffCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **11.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/version.go internal/cli/personahelpers.go internal/cli/version_test.go && git commit -m "feat(cli): add 'diff' command rendering capability delta between personas"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/version.go internal/cli/personahelpers.go internal/cli/version_test.go && git commit -m "feat(cli): add 'diff' command rendering capability delta between personas"
 ```
 
 ---
@@ -1980,7 +1980,7 @@ func TestRollbackCmd_RestoresPriorTree(t *testing.T) {
 - [ ] **12.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestRollbackCmd 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestRollbackCmd 2>&1 | tail -15
 ```
 
 Expected: `undefined: newRollbackCmd`.
@@ -2010,7 +2010,7 @@ func resolveSnapshotRef(e *environment.Environment, persona, ref string) (domain
 }
 ```
 
-Then add to `internal/cli/version.go` — extend its import block to add `"path/filepath"` and `"github.com/a2ngerer/claude-containers/internal/storage"`, then add:
+Then add to `internal/cli/version.go` — extend its import block to add `"path/filepath"` and `"github.com/a2ngerer/agent-containers/internal/storage"`, then add:
 
 ```go
 // domainObjectID converts a stored tree id string to a storage.ObjectID.
@@ -2054,15 +2054,15 @@ func newRollbackCmd(open envOpener) *cobra.Command {
 - [ ] **12.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestRollbackCmd 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestRollbackCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **12.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/version.go internal/cli/personahelpers.go internal/cli/version_test.go && git commit -m "feat(cli): add 'rollback' command restoring a prior tree and snapshotting it"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/version.go internal/cli/personahelpers.go internal/cli/version_test.go && git commit -m "feat(cli): add 'rollback' command restoring a prior tree and snapshotting it"
 ```
 
 ---
@@ -2122,7 +2122,7 @@ func TestTagCmd_NoSnapshots(t *testing.T) {
 - [ ] **13.2 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestTagCmd 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestTagCmd 2>&1 | tail -15
 ```
 
 Expected: `undefined: newTagCmd`.
@@ -2147,7 +2147,7 @@ func newTagCmd(open envOpener) *cobra.Command {
 				return err
 			}
 			if len(ids) == 0 {
-				return fmt.Errorf("cannot tag %q: no snapshots yet (run: claude_git snapshot %s)", persona, persona)
+				return fmt.Errorf("cannot tag %q: no snapshots yet (run: acon snapshot %s)", persona, persona)
 			}
 			if err := env.Store.SetTag(persona, version, ids[0]); err != nil {
 				return fmt.Errorf("set tag: %w", err)
@@ -2162,15 +2162,15 @@ func newTagCmd(open envOpener) *cobra.Command {
 - [ ] **13.4 — Run, see it pass.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestTagCmd 2>&1 | tail -5
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestTagCmd 2>&1 | tail -5
 ```
 
-Expected: `ok  	github.com/a2ngerer/claude-containers/internal/cli`.
+Expected: `ok  	github.com/a2ngerer/agent-containers/internal/cli`.
 
 - [ ] **13.5 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/version.go internal/cli/version_test.go && git commit -m "feat(cli): add 'tag' command pointing a version at the newest snapshot"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/version.go internal/cli/version_test.go && git commit -m "feat(cli): add 'tag' command pointing a version at the newest snapshot"
 ```
 
 ---
@@ -2188,7 +2188,7 @@ Wire the persona and version commands onto the cobra root so the binary exposes 
 - [ ] **14.1 — Read the current root to find the registration seam.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && sed -n '1,80p' internal/cli/root.go
+cd /Users/angeral/Repositories/agent-containers && sed -n '1,80p' internal/cli/root.go
 ```
 
 Expected: an M1 root builder (e.g. `func NewRootCmd() *cobra.Command` adding `init`/`use`/`list`). Identify the function that adds subcommands and whether M1 already exposes an opener for the cwd (e.g. `openCWD`).
@@ -2221,7 +2221,7 @@ func TestRoot_RegistersM2Commands(t *testing.T) {
 - [ ] **14.3 — Run, see it fail.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestRoot_RegistersM2Commands 2>&1 | tail -15
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestRoot_RegistersM2Commands 2>&1 | tail -15
 ```
 
 Expected: failure — the M2 command names are not yet registered.
@@ -2255,12 +2255,12 @@ Then add (adapting to the existing `AddCommand` block):
 	)
 ```
 
-Ensure `internal/cli/root.go` imports `"os"` and `"github.com/a2ngerer/claude-containers/internal/environment"` (add if missing). If M1 already defines `openCWD`, delete the duplicate above and use the existing one.
+Ensure `internal/cli/root.go` imports `"os"` and `"github.com/a2ngerer/agent-containers/internal/environment"` (add if missing). If M1 already defines `openCWD`, delete the duplicate above and use the existing one.
 
 - [ ] **14.5 — Run the full milestone gate.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go build ./... && go vet ./... && go test ./... 2>&1 | tail -20
+cd /Users/angeral/Repositories/agent-containers && go build ./... && go vet ./... && go test ./... 2>&1 | tail -20
 ```
 
 Expected: clean build, no vet findings, and `ok` for `internal/compose` and `internal/cli` (plus any M1 packages). No `FAIL` lines.
@@ -2268,7 +2268,7 @@ Expected: clean build, no vet findings, and `ok` for `internal/compose` and `int
 - [ ] **14.6 — Commit.**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/root.go internal/cli/root_test.go && git commit -m "feat(cli): register M2 persona and versioning commands on the root command"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/root.go internal/cli/root_test.go && git commit -m "feat(cli): register M2 persona and versioning commands on the root command"
 ```
 
 ---
@@ -2303,4 +2303,4 @@ cd /Users/angeral/Repositories/claude_git && git add internal/cli/root.go intern
 
 These are pure getters, not new domain concepts, and do not alter any contract signature.
 
-**Test coverage:** Compose union/override/replace/no-extends/layer-not-found (Tasks 1–2); capability diff structural delta (Task 3, Task 11); template lookup (Task 4); scaffold + overwrite-guard (Task 5); `new` flag matrix incl. mutual exclusion (Task 6); `show` capability + withheld preview (Task 7); `rm` active-guard (Task 8); snapshot/log roundtrip with newest-first ordering and RFC 3339 timestamps (Tasks 9–10); rollback restores prior tree + appends a forward snapshot (Task 12); tag resolves to newest snapshot and rejects empty history (Task 13); root registration gate + `go build`/`go vet`/full `go test` (Task 14). All filesystem tests isolate via `t.Setenv("CLAUDE_GIT_HOME", t.TempDir())` and seed an environment through `environment.Create` (M1 API).
+**Test coverage:** Compose union/override/replace/no-extends/layer-not-found (Tasks 1–2); capability diff structural delta (Task 3, Task 11); template lookup (Task 4); scaffold + overwrite-guard (Task 5); `new` flag matrix incl. mutual exclusion (Task 6); `show` capability + withheld preview (Task 7); `rm` active-guard (Task 8); snapshot/log roundtrip with newest-first ordering and RFC 3339 timestamps (Tasks 9–10); rollback restores prior tree + appends a forward snapshot (Task 12); tag resolves to newest snapshot and rejects empty history (Task 13); root registration gate + `go build`/`go vet`/full `go test` (Task 14). All filesystem tests isolate via `t.Setenv("ACON_HOME", t.TempDir())` and seed an environment through `environment.Create` (M1 API).

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Materialize a composed persona into an isolated `CLAUDE_CONFIG_DIR` outside the workspace, enforce read-only isolation via deny rules and allowlist-only material, verify it fail-closed, and launch (or print) the correct `claude` invocation — so `claude_git reviewer` activates an uncontaminated environment without ever touching the workspace `.claude/`.
+**Goal:** Materialize a composed persona into an isolated `CLAUDE_CONFIG_DIR` outside the workspace, enforce read-only isolation via deny rules and allowlist-only material, verify it fail-closed, and launch (or print) the correct `claude` invocation — so `acon reviewer` activates an uncontaminated environment without ever touching the workspace `.claude/`.
 
 **Architecture:** Three new internal packages sit on top of M2's `compose.Compose`. `materialize` renders a `ResolvedManifest` to disk (skills/subagents copied from the persona repo tree, plus generated `CLAUDE.md`, `settings.json`, `mcp.json`); `enforce` builds the permission set and verifies a materialized dir against the manifest (producing a `domain.Attestation`); `activate` orchestrates compose → lock → materialize → verify (fail-closed) → build-launch and exposes the result to thin `cli` commands. Isolation rests on two orthogonal mechanisms (material withholding + tool denial) and is *verified*, not just displayed.
 
@@ -72,13 +72,13 @@ package activate
 
 - [ ] **Step 2: Verify the packages build**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go build ./internal/...`
+Run: `cd /Users/angeral/Repositories/agent-containers && go build ./internal/...`
 Expected: no output, exit 0 (empty packages compile).
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/enforce/enforce.go internal/materialize/materialize.go internal/activate/activate.go
 git commit -m "chore: scaffold M3 activation packages"
 ```
@@ -101,7 +101,7 @@ package enforce
 import (
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -161,7 +161,7 @@ func TestBuildPermissions(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/enforce/ -run TestBuildPermissions -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/enforce/ -run TestBuildPermissions -v`
 Expected: FAIL — `undefined: BuildPermissions` / `undefined: PermissionSet`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -171,7 +171,7 @@ Expected: FAIL — `undefined: BuildPermissions` / `undefined: PermissionSet`.
 ```go
 package enforce
 
-import "github.com/a2ngerer/claude-containers/internal/domain"
+import "github.com/a2ngerer/agent-containers/internal/domain"
 
 // PermissionSet is the resolved allow/deny pair plus the permission mode that
 // gets serialized into the materialized settings.json.
@@ -223,13 +223,13 @@ func BuildPermissions(enf domain.Enforcement) PermissionSet {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/enforce/ -run TestBuildPermissions -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/enforce/ -run TestBuildPermissions -v`
 Expected: PASS — all three subtests.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/enforce/enforce.go internal/enforce/enforce_test.go
 git commit -m "feat(enforce): BuildPermissions with read-only base denials"
 ```
@@ -255,7 +255,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
 	"github.com/stretchr/testify/require"
 )
 
@@ -285,7 +285,7 @@ func TestWriteSettings(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/materialize/ -run TestWriteSettings -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/materialize/ -run TestWriteSettings -v`
 Expected: FAIL — `undefined: writeSettings` / `undefined: settingsFile`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -301,7 +301,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
 )
 
 // settingsPermissions mirrors the "permissions" object Claude Code reads from
@@ -345,13 +345,13 @@ func writeSettings(destDir string, ps enforce.PermissionSet) error {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/materialize/ -run TestWriteSettings -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/materialize/ -run TestWriteSettings -v`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/materialize/settings.go internal/materialize/settings_test.go
 git commit -m "feat(materialize): deterministic settings.json writer"
 ```
@@ -378,7 +378,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -419,7 +419,7 @@ func TestWriteMCP_ConfigWritesPlaceholderWhenMissing(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/materialize/ -run TestWriteMCP -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/materialize/ -run TestWriteMCP -v`
 Expected: FAIL — `undefined: writeMCP`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -437,7 +437,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 )
 
 // mcpFile is the minimal Claude Code mcp.json shape used only for the empty
@@ -483,13 +483,13 @@ func writeMCP(destDir string, mcp domain.MCPConfig) error {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/materialize/ -run TestWriteMCP -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/materialize/ -run TestWriteMCP -v`
 Expected: PASS — all three subtests.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/materialize/mcp.go internal/materialize/mcp_test.go
 git commit -m "feat(materialize): reconcile mcp.json (none-vs-strict)"
 ```
@@ -504,7 +504,7 @@ git commit -m "feat(materialize): reconcile mcp.json (none-vs-strict)"
 
 `Materialize` is the contract entry point `func Materialize(e *environment.Environment, rm compose.ResolvedManifest, destDir string) error`. It must be idempotent: a second run yields a byte-identical dir. Strategy is **clean-then-build**: remove destDir wholesale, recreate it, copy only allowlisted skills/subagents from the persona repo tree, then write `CLAUDE.md`, `settings.json`, `mcp.json`. Skills live under `<RepoDir>/personas/<persona>/skills/<name>/` and subagents under `<RepoDir>/personas/<persona>/agents/<name>.md` (on-disk layout, contract §6). `rm.Skills`/`rm.Subagents` are authoritative (compose already merged `_base`), and the copy reads from the persona dir on disk.
 
-The test seeds a fake persona repo tree under a temp `CLAUDE_GIT_HOME`, builds a `ResolvedManifest` by hand, and asserts allowlist-only + idempotency.
+The test seeds a fake persona repo tree under a temp `ACON_HOME`, builds a `ResolvedManifest` by hand, and asserts allowlist-only + idempotency.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -518,9 +518,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -529,7 +529,7 @@ import (
 func seedRepo(t *testing.T, persona string) *environment.Environment {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("CLAUDE_GIT_HOME", home)
+	t.Setenv("ACON_HOME", home)
 	ws := t.TempDir()
 
 	e, err := environment.Create(ws)
@@ -644,7 +644,7 @@ func snapshotDir(t *testing.T, root string) map[string]string {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/materialize/ -run TestMaterialize -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/materialize/ -run TestMaterialize -v`
 Expected: FAIL — `undefined: Materialize`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -660,9 +660,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/enforce"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // Materialize renders rm into destDir (a CLAUDE_CONFIG_DIR outside the
@@ -782,13 +782,13 @@ func copyFile(src, dst string) error {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/materialize/ -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/materialize/ -v`
 Expected: PASS — `TestWriteSettings`, `TestWriteMCP*`, `TestMaterialize_AllowlistOnly`, `TestMaterialize_Idempotent`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/materialize/materialize.go internal/materialize/materialize_test.go
 git commit -m "feat(materialize): idempotent allowlist-only render to config dir"
 ```
@@ -817,8 +817,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -919,7 +919,7 @@ func TestVerify_MissingDenyMismatch(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/enforce/ -run TestVerify -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/enforce/ -run TestVerify -v`
 Expected: FAIL — `undefined: Verify`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -937,8 +937,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 )
 
 // Verify asserts that destDir contains exactly the allowlisted skills/subagents
@@ -1112,13 +1112,13 @@ func toSet(s []string) map[string]bool {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/enforce/ -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/enforce/ -v`
 Expected: PASS — `TestBuildPermissions`, `TestVerify_Clean`, `TestVerify_SmuggledSkillMismatch`, `TestVerify_MissingDenyMismatch`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/enforce/verify.go internal/enforce/verify_test.go
 git commit -m "feat(enforce): Verify materialized dir fail-closed with attestation"
 ```
@@ -1154,8 +1154,8 @@ package activate
 import (
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1206,7 +1206,7 @@ func TestBuildLaunch_WithMCP(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/activate/ -run TestBuildLaunch -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/activate/ -run TestBuildLaunch -v`
 Expected: FAIL — `undefined: BuildLaunch` / `undefined: LaunchSpec`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1220,8 +1220,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
 )
 
 // LaunchSpec is the environment + argv to start (or print) for claude.
@@ -1261,13 +1261,13 @@ func BuildLaunch(configDir string, rm compose.ResolvedManifest) LaunchSpec {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/activate/ -run TestBuildLaunch -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/activate/ -run TestBuildLaunch -v`
 Expected: PASS — both subtests.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/activate/launch.go internal/activate/launch_test.go
 git commit -m "feat(activate): BuildLaunch with conditional MCP flags"
 ```
@@ -1300,15 +1300,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
 func lockEnv(t *testing.T) *environment.Environment {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("CLAUDE_GIT_HOME", home)
+	t.Setenv("ACON_HOME", home)
 	ws := t.TempDir()
 	e, err := environment.Create(ws)
 	require.NoError(t, err)
@@ -1384,7 +1384,7 @@ func writeForeignLock(t *testing.T, e *environment.Environment, persona string, 
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/activate/ -run TestLock -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/activate/ -run TestLock -v`
 Expected: FAIL — `undefined: Acquire` / `undefined: lockState`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1403,8 +1403,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // lockState is the JSON body of the environment lockfile.
@@ -1413,7 +1413,7 @@ type lockState struct {
 	PID     int    `json:"pid"`
 }
 
-// Lock is a held environment lock. It guards cross-process claude_git mutations
+// Lock is a held environment lock. It guards cross-process acon mutations
 // for one workspace; it does NOT guard concurrent claude sessions (those are
 // isolated by separate CLAUDE_CONFIG_DIRs).
 type Lock struct {
@@ -1506,13 +1506,13 @@ func pidAlive(pid int) bool {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/activate/ -run TestLock -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/activate/ -run TestLock -v`
 Expected: PASS — all five subtests.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/activate/lock.go internal/activate/lock_test.go
 git commit -m "feat(activate): cross-process lock with stale-PID reclaim"
 ```
@@ -1549,8 +1549,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1559,7 +1559,7 @@ import (
 func seedReviewerEnv(t *testing.T) *environment.Environment {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("CLAUDE_GIT_HOME", home)
+	t.Setenv("ACON_HOME", home)
 	ws := t.TempDir()
 	e, err := environment.Create(ws)
 	require.NoError(t, err)
@@ -1660,7 +1660,7 @@ func TestActivate_NotFound(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/activate/ -run TestActivate -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/activate/ -run TestActivate -v`
 Expected: FAIL — `undefined: Activate` / `undefined: ActivationResult`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1678,11 +1678,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/enforce"
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/materialize"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/materialize"
 )
 
 // ActivationResult is the outcome of Activate: where the env was materialized,
@@ -1776,13 +1776,13 @@ func withheldSkills(e *environment.Environment, rm compose.ResolvedManifest) []d
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/activate/ -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/activate/ -v`
 Expected: PASS — `TestBuildLaunch*`, `TestLock*`, `TestActivate_HappyPath`, `TestActivate_DefaultsToLatestVersion`, `TestActivate_NotFound`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/activate/activate.go internal/activate/activate_test.go
 git commit -m "feat(activate): orchestrate compose->materialize->verify->launch fail-closed"
 ```
@@ -1794,7 +1794,7 @@ git commit -m "feat(activate): orchestrate compose->materialize->verify->launch 
 **Files:**
 - Create: `internal/cli/use.go`
 - Test: `internal/cli/use_test.go`
-- Modify: `internal/cli/root.go` (register commands), `cmd/claude_git/main.go` (apply dispatch)
+- Modify: `internal/cli/root.go` (register commands), `cmd/acon/main.go` (apply dispatch)
 
 `use.go` contributes the `use <persona>` command, the `deactivate` command, and the dispatch shim `DispatchArgs([]string) []string` that rewrites a non-reserved first token to `use <token>`. Reserved names come from `reservedSubcommands`. The pure functions `DispatchArgs`/`isReserved` are the only unit-tested part (no dependence on how the root command is constructed in M1/M2).
 
@@ -1873,7 +1873,7 @@ func TestIsReserved(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run 'TestDispatchArgs|TestIsReserved' -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run 'TestDispatchArgs|TestIsReserved' -v`
 Expected: FAIL — `undefined: DispatchArgs` / `undefined: isReserved`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1890,9 +1890,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/a2ngerer/claude-containers/internal/activate"
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/activate"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/spf13/cobra"
 )
 
@@ -1925,7 +1925,7 @@ func DispatchArgs(args []string) []string {
 	return append([]string{"use"}, args...)
 }
 
-// newUseCmd builds `claude_git use <persona>`: compose, materialize, attest, and
+// newUseCmd builds `acon use <persona>`: compose, materialize, attest, and
 // either print the launch command (default, safe) or exec claude (--exec).
 func newUseCmd() *cobra.Command {
 	var execDirect bool
@@ -1958,7 +1958,7 @@ func newUseCmd() *cobra.Command {
 	return cmd
 }
 
-// newDeactivateCmd builds `claude_git deactivate`: clear the active persona.
+// newDeactivateCmd builds `acon deactivate`: clear the active persona.
 func newDeactivateCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "deactivate",
@@ -2031,7 +2031,7 @@ root.AddCommand(newUseCmd())
 root.AddCommand(newDeactivateCmd())
 ```
 
-Apply the dispatch shim. In `cmd/claude_git/main.go`, rewrite args before execution:
+Apply the dispatch shim. In `cmd/acon/main.go`, rewrite args before execution:
 
 ```go
 package main
@@ -2040,7 +2040,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/a2ngerer/claude-containers/internal/cli"
+	"github.com/a2ngerer/agent-containers/internal/cli"
 )
 
 func main() {
@@ -2057,14 +2057,14 @@ func main() {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run 'TestDispatchArgs|TestIsReserved' -v && go build ./...`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run 'TestDispatchArgs|TestIsReserved' -v && go build ./...`
 Expected: PASS for both tests; `go build ./...` exit 0.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
-git add internal/cli/use.go internal/cli/use_test.go internal/cli/root.go cmd/claude_git/main.go
+cd /Users/angeral/Repositories/agent-containers
+git add internal/cli/use.go internal/cli/use_test.go internal/cli/root.go cmd/acon/main.go
 git commit -m "feat(cli): use/deactivate commands + persona dispatch shim"
 ```
 
@@ -2092,7 +2092,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -2101,7 +2101,7 @@ import (
 func seedReviewer(t *testing.T) *environment.Environment {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("CLAUDE_GIT_HOME", home)
+	t.Setenv("ACON_HOME", home)
 	ws := t.TempDir()
 	e, err := environment.Create(ws)
 	require.NoError(t, err)
@@ -2184,7 +2184,7 @@ func TestVerifyCmd_UnknownPersonaErrors(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestVerifyCmd -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestVerifyCmd -v`
 Expected: FAIL — `undefined: newVerifyCmd`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -2198,14 +2198,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/enforce"
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/materialize"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/materialize"
 	"github.com/spf13/cobra"
 )
 
-// newVerifyCmd builds `claude_git verify <persona>`: re-materialize the persona
+// newVerifyCmd builds `acon verify <persona>`: re-materialize the persona
 // into its cache config dir and assert isolation. Exits non-zero (RunE error) on
 // any mismatch; the error message carries the diff produced by enforce.Verify.
 func newVerifyCmd() *cobra.Command {
@@ -2253,13 +2253,13 @@ root.AddCommand(newVerifyCmd())
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestVerifyCmd -v`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestVerifyCmd -v`
 Expected: PASS — `TestVerifyCmd_Clean`, `TestVerifyCmd_UnknownPersonaErrors`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add internal/cli/verify.go internal/cli/verify_test.go internal/cli/root.go
 git commit -m "feat(cli): verify command, non-zero exit on isolation mismatch"
 ```
@@ -2273,12 +2273,12 @@ git commit -m "feat(cli): verify command, non-zero exit on isolation mismatch"
 
 - [ ] **Step 1: Run the entire test suite**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go test ./... -count=1`
+Run: `cd /Users/angeral/Repositories/agent-containers && go test ./... -count=1`
 Expected: `ok` for every package, including `internal/enforce`, `internal/materialize`, `internal/activate`, `internal/cli`. No failures.
 
 - [ ] **Step 2: Vet the tree**
 
-Run: `cd /Users/angeral/Repositories/claude_git && go vet ./...`
+Run: `cd /Users/angeral/Repositories/agent-containers && go vet ./...`
 Expected: no output, exit 0.
 
 - [ ] **Step 3: Build the binary and smoke the dispatch + attestation**
@@ -2286,13 +2286,13 @@ Expected: no output, exit 0.
 Run:
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
-go build -o /tmp/claude_git ./cmd/claude_git
-export CLAUDE_GIT_HOME="$(mktemp -d)"
+cd /Users/angeral/Repositories/agent-containers
+go build -o /tmp/acon ./cmd/acon
+export ACON_HOME="$(mktemp -d)"
 WS="$(mktemp -d)"
 cd "$WS"
-/tmp/claude_git init
-/tmp/claude_git new reviewer --extends _base
+/tmp/acon init
+/tmp/acon new reviewer --extends _base
 ```
 
 > If `init`/`new` from M1/M2 are not yet wired into the binary in this branch, the unit + integration tests in Steps 1-2 already prove M3's behavior; skip the seeding and Steps 3-4. The smoke below assumes a reviewer persona exists with at least one allowlisted skill.
@@ -2300,7 +2300,7 @@ cd "$WS"
 ```bash
 # Dispatch: bare persona name == use reviewer (prints attestation + launch hint,
 # does NOT modify the workspace .claude/).
-/tmp/claude_git reviewer
+/tmp/acon reviewer
 echo "--- workspace untouched check ---"
 ls -la "$WS/.claude" 2>/dev/null || echo "no workspace .claude written by activation (expected)"
 ```
@@ -2312,15 +2312,15 @@ Expected: the `reviewer` invocation prints a `Persona: reviewer (uncontaminated)
 Run:
 
 ```bash
-/tmp/claude_git reviewer | grep -o 'CLAUDE_CONFIG_DIR=[^ ]*'
+/tmp/acon reviewer | grep -o 'CLAUDE_CONFIG_DIR=[^ ]*'
 ```
 
-Expected: a path under `$CLAUDE_GIT_HOME/cache/<hash>/reviewer` — i.e. NOT under `$WS`. This is the materialized-isolation guarantee (spec §8, acceptance criterion 3).
+Expected: a path under `$ACON_HOME/cache/<hash>/reviewer` — i.e. NOT under `$WS`. This is the materialized-isolation guarantee (spec §8, acceptance criterion 3).
 
 - [ ] **Step 5: Commit (allow-empty marker for the validation task)**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git
+cd /Users/angeral/Repositories/agent-containers
 git add -A
 git commit -m "test(m3): full-suite green + activation smoke" --allow-empty
 ```
@@ -2355,11 +2355,11 @@ git commit -m "test(m3): full-suite green + activation smoke" --allow-empty
 - `internal/enforce/` (new): `enforce.go`, `verify.go`.
 - `internal/materialize/` (new): `materialize.go`, `settings.go`, `mcp.go`.
 - `internal/activate/` (new): `activate.go`, `lock.go`, `launch.go`.
-- `internal/cli/` (extended): `use.go` (+ `deactivate` + dispatch), `verify.go`; registrations in `root.go`; arg-rewrite in `cmd/claude_git/main.go`.
+- `internal/cli/` (extended): `use.go` (+ `deactivate` + dispatch), `verify.go`; registrations in `root.go`; arg-rewrite in `cmd/acon/main.go`.
 
-**Files:** 8 new source + 7 new test = 15 new files, plus edits to `internal/cli/root.go` and `cmd/claude_git/main.go`.
+**Files:** 8 new source + 7 new test = 15 new files, plus edits to `internal/cli/root.go` and `cmd/acon/main.go`.
 
-**Commands delivered:** `claude_git use <persona>` (plus bare `claude_git <persona>` via dispatch, `--exec` for direct `syscall.Exec`), `claude_git deactivate`, `claude_git verify <persona>`.
+**Commands delivered:** `acon use <persona>` (plus bare `acon <persona>` via dispatch, `--exec` for direct `syscall.Exec`), `acon deactivate`, `acon verify <persona>`.
 
 **Key tests:** `BuildPermissions` read-only base deny + dedup; `Materialize` allowlist-only + byte-identical idempotency; `Verify` clean / smuggled-build-skill ⇒ `ErrVerifyMismatch` / missing-deny ⇒ mismatch; `BuildLaunch` exact flags with and without MCP (`--mcp-config` omitted when no MCP); `Lock` free / own-reLock / foreign-live ⇒ `ErrLocked` / stale-reclaim / release; `Activate` happy path + `:latest` default + not-found; CLI `DispatchArgs` reserved-vs-persona routing; `verify` clean output + non-zero error path.
 

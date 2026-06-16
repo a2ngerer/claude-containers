@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,7 +13,7 @@ import (
 // <remote>` clones an existing persona repo instead of seeding _base from the
 // local .claude/. The two paths are mutually exclusive (spec §11).
 func TestInitFrom_ClonesExistingRepo(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 
 	// produce a source repo with a reviewer persona, push to a bare remote
 	src := t.TempDir()
@@ -42,7 +42,7 @@ func TestInitFrom_ClonesExistingRepo(t *testing.T) {
 	resolved, err := filepath.EvalSymlinks(dst)
 	require.NoError(t, err)
 	hash := environment.WorkspaceHash(resolved)
-	marker, mErr := os.ReadFile(filepath.Join(dst, ".claude_git"))
+	marker, mErr := os.ReadFile(filepath.Join(dst, ".acon"))
 	require.NoError(t, mErr)
 	require.Equal(t, hash+"\n", string(marker))
 }

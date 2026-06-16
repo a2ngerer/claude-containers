@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +15,7 @@ import (
 // and writes the given personas into the repo. Returns the open environment.
 func seedEnv(t *testing.T, personas ...domain.Persona) *environment.Environment {
 	t.Helper()
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	env, err := environment.Create(ws)
 	require.NoError(t, err)
@@ -132,7 +132,7 @@ func TestCompose_BothClaudeMDEmptyYieldsEmpty(t *testing.T) {
 		Config:  domain.Config{ClaudeMD: "CLAUDE.md"},
 	}
 	// Seed without writing any CLAUDE.md: missing file -> empty content in readClaudeMD.
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	env, err := environment.Create(ws)
 	require.NoError(t, err)

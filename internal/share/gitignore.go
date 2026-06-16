@@ -135,7 +135,7 @@ func fileHasSecretMarker(path string) (bool, error) {
 // Claude-local settings, key material, credentials, and common secret patterns.
 // A shared persona leaking an API key is an instant trust killer (spec §13).
 func DefaultGitignore() string {
-	return `# claude_git persona repo — secret-safe defaults (DO NOT relax)
+	return `# acon persona repo — secret-safe defaults (DO NOT relax)
 # Claude Code local layer (coder's machine-local tweaks must never be shared)
 settings.local.json
 

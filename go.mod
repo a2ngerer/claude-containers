@@ -1,4 +1,4 @@
-module github.com/a2ngerer/claude-containers
+module github.com/a2ngerer/agent-containers
 
 go 1.25.0
 

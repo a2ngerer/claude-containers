@@ -9,7 +9,7 @@ import (
 )
 
 func TestList_ShowsBaseAfterInit(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(ws, "CLAUDE.md"), []byte("# rules\n"), 0o644))
 
@@ -23,7 +23,7 @@ func TestList_ShowsBaseAfterInit(t *testing.T) {
 }
 
 func TestList_NotInitialized(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	_, err := runCLI(t, "list", "--workspace", ws)
 	require.Error(t, err)

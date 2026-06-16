@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +18,7 @@ func seedReviewer(t *testing.T) *environment.Environment {
 	t.Helper()
 	home, err := filepath.EvalSymlinks(t.TempDir())
 	require.NoError(t, err)
-	t.Setenv("CLAUDE_GIT_HOME", home)
+	t.Setenv("ACON_HOME", home)
 	ws, err := filepath.EvalSymlinks(t.TempDir())
 	require.NoError(t, err)
 	e, err := environment.Create(ws)

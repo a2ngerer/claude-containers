@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/share"
-	"github.com/a2ngerer/claude-containers/internal/storage"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/share"
+	"github.com/a2ngerer/agent-containers/internal/storage"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,7 +36,7 @@ func writeTestPersonaSnapshot(t *testing.T, env *environment.Environment, person
 }
 
 func TestCreate_WritesGitignore(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 
 	env, err := environment.Create(ws)
@@ -49,7 +49,7 @@ func TestCreate_WritesGitignore(t *testing.T) {
 }
 
 func TestCloneInto_PopulatesAndOpens(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 
 	// build a source repo, write a persona snapshot, push to a bare remote
 	src := t.TempDir()
@@ -80,7 +80,7 @@ func TestCloneInto_PopulatesAndOpens(t *testing.T) {
 	require.NotEmpty(t, snaps)
 
 	// workspace marker exists and contains the hash
-	marker, readErr := os.ReadFile(filepath.Join(dst, ".claude_git"))
+	marker, readErr := os.ReadFile(filepath.Join(dst, ".acon"))
 	require.NoError(t, readErr)
 	require.Equal(t, dstEnv.Hash+"\n", string(marker))
 }
@@ -88,7 +88,7 @@ func TestCloneInto_PopulatesAndOpens(t *testing.T) {
 func TestGitignoreInSync(t *testing.T) {
 	// The inlined environment.defaultGitignore must stay byte-identical to
 	// share.DefaultGitignore(). Compared via Create's output (the only public surface).
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	env, err := environment.Create(ws)
 	require.NoError(t, err)

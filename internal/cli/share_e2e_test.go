@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/storage"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/storage"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +15,7 @@ import (
 // remote, `clone` into workspace B, then assert the persona content arrived and
 // the secret-safe .gitignore guard is present (acceptance criterion §18.7).
 func TestPushClone_E2E_RoundTrip(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	bare := initBareRemoteCLI(t)
 
 	// --- producer: create env in workspace A, snapshot a persona, push ---

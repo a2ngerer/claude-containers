@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
 func setupHome(t *testing.T) {
 	t.Helper()
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 }
 
 func TestCreate_MakesDirsAndConfig(t *testing.T) {

@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/storage"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/storage"
 )
 
 // newSnapshotCmd builds the `snapshot` command (alias `commit`).
@@ -159,7 +159,7 @@ func newTagCmd(open envOpener) *cobra.Command {
 				return fmt.Errorf("cannot read timeline for %q: %w", persona, err)
 			}
 			if len(ids) == 0 {
-				return fmt.Errorf("cannot tag %q: no snapshots yet (run: claude_git snapshot %s)", persona, persona)
+				return fmt.Errorf("cannot tag %q: no snapshots yet (run: acon snapshot %s)", persona, persona)
 			}
 			if err := env.Store.SetTag(persona, version, ids[0]); err != nil {
 				return fmt.Errorf("set tag: %w", err)

@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // openCWD opens the environment bound to the current working directory.
@@ -25,12 +25,12 @@ func openCWD() (*environment.Environment, error) {
 }
 
 // NewRootCmd builds the cobra root command with all global flags and the
-// M1 subcommands wired in. cmd/claude_git/main.go Execute()s the result.
+// M1 subcommands wired in. cmd/acon/main.go Execute()s the result.
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:           "claude_git",
+		Use:           "acon",
 		Short:         "Version control and isolated, swappable environments for the Claude Code config layer",
-		Long:          "claude_git treats CLAUDE.md plus the .claude/ directory as a versioned, swappable, shareable persona — \"Docker for Claude agent environments.\"",
+		Long:          "acon treats CLAUDE.md plus the .claude/ directory as a versioned, swappable, shareable persona — \"Docker for Claude agent environments.\"",
 		SilenceUsage:  true,
 		SilenceErrors: false,
 	}

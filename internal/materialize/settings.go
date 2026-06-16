@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
 )
 
 // settingsPermissions mirrors the "permissions" object Claude Code reads from

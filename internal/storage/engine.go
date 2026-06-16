@@ -1,7 +1,7 @@
 // internal/storage/engine.go
 package storage
 
-import "github.com/a2ngerer/claude-containers/internal/domain"
+import "github.com/a2ngerer/agent-containers/internal/domain"
 
 type ObjectID string
 

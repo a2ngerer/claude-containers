@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/a2ngerer/claude-containers/internal/share"
+	"github.com/a2ngerer/agent-containers/internal/share"
 	"github.com/spf13/cobra"
 )
 
-// newPushCmd: `claude_git push [remote]` — secret-scan, then push (default "origin").
+// newPushCmd: `acon push [remote]` — secret-scan, then push (default "origin").
 func newPushCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "push [remote]",
@@ -29,7 +29,7 @@ func newPushCmd() *cobra.Command {
 	}
 }
 
-// newPullCmd: `claude_git pull [remote]` — fetch + integrate remote changes.
+// newPullCmd: `acon pull [remote]` — fetch + integrate remote changes.
 func newPullCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "pull [remote]",
@@ -50,7 +50,7 @@ func newPullCmd() *cobra.Command {
 	}
 }
 
-// newCloneCmd: `claude_git clone <remote>` — clone an existing persona repo into a
+// newCloneCmd: `acon clone <remote>` — clone an existing persona repo into a
 // new environment bound to the current workspace (team onboarding into an empty dir).
 func newCloneCmd() *cobra.Command {
 	return &cobra.Command{
@@ -67,7 +67,7 @@ func newCloneCmd() *cobra.Command {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(),
-				"Cloned %q into a new environment for %s.\nRun `claude_git list` to see available personas.\n",
+				"Cloned %q into a new environment for %s.\nRun `acon list` to see available personas.\n",
 				args[0], env.Workspace)
 			return nil
 		},

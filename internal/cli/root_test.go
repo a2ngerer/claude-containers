@@ -9,7 +9,7 @@ import (
 
 func TestNewRootCmd_Use(t *testing.T) {
 	cmd := NewRootCmd()
-	require.Equal(t, "claude_git", cmd.Use)
+	require.Equal(t, "acon", cmd.Use)
 }
 
 func TestNewRootCmd_HasSubcommands(t *testing.T) {

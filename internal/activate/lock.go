@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // lockState is the JSON body of the environment lockfile.
@@ -19,7 +19,7 @@ type lockState struct {
 	PID     int    `json:"pid"`
 }
 
-// Lock is a held environment lock. It guards cross-process claude_git mutations
+// Lock is a held environment lock. It guards cross-process acon mutations
 // for one workspace; it does NOT guard concurrent claude sessions (those are
 // isolated by separate CLAUDE_CONFIG_DIRs).
 type Lock struct {

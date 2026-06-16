@@ -21,7 +21,7 @@
 | `internal/share/share.go` | `Push`/`Pull`/`Clone` wrapping `Store.AddRemote`/`Push`/`Pull`; `Push` scans first and aborts with the suspect list. |
 | `internal/share/share_test.go` | Tests: push/pull round-trip against a local bare remote; clone round-trip; push aborts on secret. |
 | `internal/cli/share.go` | `push [remote]`, `pull [remote]`, `clone <remote>` cobra commands (thin; delegate to `share`). |
-| `internal/cli/share_test.go` | Test: `clone` command writes `repo/`, `env.toml`, and the `.claude_git` marker for the current workspace. |
+| `internal/cli/share_test.go` | Test: `clone` command writes `repo/`, `env.toml`, and the `.acon` marker for the current workspace. |
 | `internal/cli/share_e2e_test.go` | End-to-end test: init -> push -> clone round-trip through the CLI. |
 | `internal/cli/init_from_test.go` | Test: `init --from <remote>` clones an existing persona repo for onboarding. |
 | `internal/cli/init.go` | **MODIFY (M1 file):** add a `--from <remote>` branch that clones an existing persona repo instead of seeding `_base`. |
@@ -78,7 +78,7 @@ func DefaultGitignore() string
 
 **M1-provided helpers this milestone assumes exist** (from `internal/cli/init.go`, M1). If a name differs in the actual M1 implementation, adapt the call site, not the contract:
 
-- `internal/cli/init.go` defines `newInitCmd() *cobra.Command` whose `RunE` resolves the absolute workspace (`os.Getwd` + `filepath.Abs`), calls `environment.Create(workspace)`, seeds `_base` from the workspace `.claude/`, and writes the `<workspace>/.claude_git` marker (one line = workspace hash).
+- `internal/cli/init.go` defines `newInitCmd() *cobra.Command` whose `RunE` resolves the absolute workspace (`os.Getwd` + `filepath.Abs`), calls `environment.Create(workspace)`, seeds `_base` from the workspace `.claude/`, and writes the `<workspace>/.acon` marker (one line = workspace hash).
 
 ---
 
@@ -133,7 +133,7 @@ func TestDefaultGitignore_EndsWithNewline(t *testing.T) {
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/share/`
 - [ ] **Expected:** compile failure — `undefined: DefaultGitignore`.
 
 ### Step 1.2 — GREEN: implement `DefaultGitignore()`
@@ -150,7 +150,7 @@ package share
 // Claude-local settings, key material, credentials, and common secret patterns.
 // A shared persona leaking an API key is an instant trust killer (spec §13).
 func DefaultGitignore() string {
-	return `# claude_git persona repo — secret-safe defaults (DO NOT relax)
+	return `# acon persona repo — secret-safe defaults (DO NOT relax)
 # Claude Code local layer (coder's machine-local tweaks must never be shared)
 settings.local.json
 
@@ -188,18 +188,18 @@ id_ed25519.*
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/`
-- [ ] **Expected:** `ok  github.com/a2ngerer/claude-containers/internal/share`.
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/share/`
+- [ ] **Expected:** `ok  github.com/a2ngerer/agent-containers/internal/share`.
 
 ### Step 1.3 — REFACTOR
 
 - [ ] No refactor needed; the function is a single string literal. Confirm formatting:
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && gofmt -l internal/share/gitignore.go`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && gofmt -l internal/share/gitignore.go`
 - [ ] **Expected:** empty output (already formatted).
 
 ### Step 1.4 — COMMIT
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && git add internal/share/gitignore.go internal/share/gitignore_test.go && git commit -m "share: add DefaultGitignore with secret-safe patterns"`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && git add internal/share/gitignore.go internal/share/gitignore_test.go && git commit -m "share: add DefaultGitignore with secret-safe patterns"`
 
 **New types beyond contract:** none (`DefaultGitignore` is in the contract sketch).
 
@@ -279,7 +279,7 @@ func TestScanForSecrets_SkipsDotGit(t *testing.T) {
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/share/`
 - [ ] **Expected:** compile failure — `undefined: ScanForSecrets`.
 
 ### Step 2.2 — GREEN: implement `ScanForSecrets`
@@ -416,17 +416,17 @@ func fileHasSecretMarker(path string) (bool, error) {
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/`
-- [ ] **Expected:** `ok  github.com/a2ngerer/claude-containers/internal/share`.
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/share/`
+- [ ] **Expected:** `ok  github.com/a2ngerer/agent-containers/internal/share`.
 
 ### Step 2.3 — REFACTOR
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && gofmt -l internal/share/ && go vet ./internal/share/`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && gofmt -l internal/share/ && go vet ./internal/share/`
 - [ ] **Expected:** empty `gofmt` output; `go vet` reports nothing.
 
 ### Step 2.4 — COMMIT
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && git add internal/share/gitignore.go internal/share/gitignore_test.go && git commit -m "share: add ScanForSecrets for tracked secret files and key markers"`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && git add internal/share/gitignore.go internal/share/gitignore_test.go && git commit -m "share: add ScanForSecrets for tracked secret files and key markers"`
 
 **New types beyond contract:** none (only unexported package-level vars/consts: `secretNameGlobs`, `secretContentMarkers`, `scanReadLimit`, and unexported helpers).
 
@@ -449,14 +449,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
-// withToolHome points CLAUDE_GIT_HOME at a fresh temp dir for the duration of one test.
+// withToolHome points ACON_HOME at a fresh temp dir for the duration of one test.
 func withToolHome(t *testing.T) {
 	t.Helper()
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 }
 
 func TestPush_AbortsOnSecret(t *testing.T) {
@@ -476,7 +476,7 @@ func TestPush_AbortsOnSecret(t *testing.T) {
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/ -run TestPush_AbortsOnSecret`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/share/ -run TestPush_AbortsOnSecret`
 - [ ] **Expected:** compile failure — `undefined: Push` and `undefined: ErrSecretsFound`.
 
 ### Step 3.2 — GREEN: implement `share.go` errors + `Push`
@@ -491,7 +491,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // ErrSecretsFound is returned by Push when ScanForSecrets reports suspect paths.
@@ -519,17 +519,17 @@ func Push(e *environment.Environment, remote string) error {
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/ -run TestPush_AbortsOnSecret`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/share/ -run TestPush_AbortsOnSecret`
 - [ ] **Expected:** `ok` — the scan finds `leaked.key`, `Push` returns `ErrSecretsFound` containing `leaked.key`, and `e.Store.Push` is never reached.
 
 ### Step 3.3 — REFACTOR
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && gofmt -l internal/share/ && go vet ./internal/share/`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && gofmt -l internal/share/ && go vet ./internal/share/`
 - [ ] **Expected:** empty `gofmt`; clean `go vet`.
 
 ### Step 3.4 — COMMIT
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && git add internal/share/share.go internal/share/share_test.go && git commit -m "share: add Push with mandatory pre-push secret scan"`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && git add internal/share/share.go internal/share/share_test.go && git commit -m "share: add Push with mandatory pre-push secret scan"`
 
 **New types beyond contract:** `ErrSecretsFound` (sentinel error) — lives in `internal/share`, the package that owns the push-abort branch. Flagged in the final summary.
 
@@ -628,7 +628,7 @@ func TestPull_FetchesNewCommits(t *testing.T) {
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/ -run 'RoundTrip|Pull_Fetches'`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/share/ -run 'RoundTrip|Pull_Fetches'`
 - [ ] **Expected:** compile failure — `undefined: Clone`, `undefined: Pull`.
 
 ### Step 4.2 — GREEN: implement `Pull` and `Clone`
@@ -648,7 +648,7 @@ func Pull(e *environment.Environment, remote string) error {
 
 // Clone onboards an existing persona repo into a NEW environment bound to destWorkspace.
 // It delegates to environment.CloneInto, which clones the remote into RepoDir(hash),
-// writes env.toml, and sets the <workspace>/.claude_git marker. The returned environment
+// writes env.toml, and sets the <workspace>/.acon marker. The returned environment
 // is ready for `list`, `use`, etc. Used by the `clone` command and by `init --from`.
 func Clone(remote, destWorkspace string) (*environment.Environment, error) {
 	env, err := environment.CloneInto(destWorkspace, remote)
@@ -659,17 +659,17 @@ func Clone(remote, destWorkspace string) (*environment.Environment, error) {
 }
 ```
 
-- [ ] **Run (after Task 5 lands):** `cd /Users/angeral/Repositories/claude_git && go test ./internal/share/ -run 'RoundTrip|Pull_Fetches'`
+- [ ] **Run (after Task 5 lands):** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/share/ -run 'RoundTrip|Pull_Fetches'`
 - [ ] **Expected:** `ok` once `environment.CloneInto` exists (Task 5).
 
 ### Step 4.3 — REFACTOR
 
-- [ ] **Run (after Task 5):** `cd /Users/angeral/Repositories/claude_git && gofmt -l internal/share/ && go vet ./internal/share/`
+- [ ] **Run (after Task 5):** `cd /Users/angeral/Repositories/agent-containers && gofmt -l internal/share/ && go vet ./internal/share/`
 - [ ] **Expected:** empty `gofmt`; clean `go vet`.
 
 ### Step 4.4 — COMMIT
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && git add internal/share/share.go internal/share/share_test.go && git commit -m "share: add Pull and Clone (delegating to environment.CloneInto)"`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && git add internal/share/share.go internal/share/share_test.go && git commit -m "share: add Pull and Clone (delegating to environment.CloneInto)"`
 
 **New types beyond contract:** none in `share` (functions only). The new constructor `environment.CloneInto` is introduced in Task 5 and flagged there.
 
@@ -694,8 +694,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/share"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/share"
 	"github.com/stretchr/testify/require"
 )
 
@@ -709,7 +709,7 @@ func initBareRemoteEnv(t *testing.T) string {
 }
 
 func TestCreate_WritesGitignore(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 
 	env, err := environment.Create(ws)
@@ -722,7 +722,7 @@ func TestCreate_WritesGitignore(t *testing.T) {
 }
 
 func TestCloneInto_PopulatesAndOpens(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 
 	// build a source repo and push it to a bare remote
 	src := t.TempDir()
@@ -747,7 +747,7 @@ func TestCloneInto_PopulatesAndOpens(t *testing.T) {
 	require.NoError(t, statErr)
 
 	// workspace marker exists and contains the hash
-	marker, readErr := os.ReadFile(filepath.Join(dst, ".claude_git"))
+	marker, readErr := os.ReadFile(filepath.Join(dst, ".acon"))
 	require.NoError(t, readErr)
 	require.Equal(t, dstEnv.Hash, string(marker))
 }
@@ -755,7 +755,7 @@ func TestCloneInto_PopulatesAndOpens(t *testing.T) {
 func TestGitignoreInSync(t *testing.T) {
 	// The inlined environment.defaultGitignore must stay byte-identical to
 	// share.DefaultGitignore(). Compared via Create's output (the only public surface).
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	env, err := environment.Create(ws)
 	require.NoError(t, err)
@@ -767,7 +767,7 @@ func TestGitignoreInSync(t *testing.T) {
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/environment/ -run 'WritesGitignore|CloneInto|GitignoreInSync'`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/environment/ -run 'WritesGitignore|CloneInto|GitignoreInSync'`
 - [ ] **Expected:** failures — `TestCreate_WritesGitignore`/`TestGitignoreInSync` fail (M1 `Create` writes no `.gitignore` yet) and `TestCloneInto_PopulatesAndOpens` fails to compile (`undefined: environment.CloneInto`).
 
 ### Step 5.2 — GREEN: add the gitignore constant + write helpers + `CloneInto`
@@ -789,7 +789,7 @@ import (
 // defaultGitignore is the byte-identical copy of share.DefaultGitignore().
 // It is inlined here to avoid an import cycle (share imports environment, not vice
 // versa). The guard test TestGitignoreInSync asserts the two never drift.
-const defaultGitignore = `# claude_git persona repo — secret-safe defaults (DO NOT relax)
+const defaultGitignore = `# acon persona repo — secret-safe defaults (DO NOT relax)
 # Claude Code local layer (coder's machine-local tweaks must never be shared)
 settings.local.json
 
@@ -837,8 +837,8 @@ func writeGitignore(repoDir string) error {
 
 // CloneInto onboards an existing persona repo into a NEW environment bound to workspace.
 // It computes the hash, makes the env dir, clones remote into RepoDir, writes env.toml
-// (no active persona), writes the <workspace>/.claude_git marker, and returns the opened
-// environment. Used by share.Clone and by `claude_git init --from`.
+// (no active persona), writes the <workspace>/.acon marker, and returns the opened
+// environment. Used by share.Clone and by `acon init --from`.
 func CloneInto(workspace, remote string) (*Environment, error) {
 	abs, err := filepath.Abs(workspace)
 	if err != nil {
@@ -882,9 +882,9 @@ func writeEnvConfig(hash string, cfg EnvConfig) error {
 	return nil
 }
 
-// writeMarker writes the one-line <workspace>/.claude_git marker (= workspace hash).
+// writeMarker writes the one-line <workspace>/.acon marker (= workspace hash).
 func writeMarker(absWorkspace, hash string) error {
-	path := filepath.Join(absWorkspace, ".claude_git")
+	path := filepath.Join(absWorkspace, ".acon")
 	if err := os.WriteFile(path, []byte(hash), 0o644); err != nil {
 		return fmt.Errorf("write workspace marker %s: %w", path, err)
 	}
@@ -892,7 +892,7 @@ func writeMarker(absWorkspace, hash string) error {
 }
 ```
 
-- [ ] **CRITICAL note on duplicate helpers:** M1's `environment.Create` already writes `env.toml` and the `<workspace>/.claude_git` marker. If M1 exposes reusable helpers (e.g. `writeEnvConfig`/`writeMarker` or similar), DELETE the duplicate definitions above and call M1's. The duplicates are included only so this plan compiles standalone. If M1 already defines a function with the same name, `go build` reports `writeEnvConfig redeclared in this block` (or `writeMarker redeclared`) — in that case keep M1's and remove the copy here. `toml.Marshal` of `EnvConfig` must match M1's env.toml field names (`workspace_path`, `active_persona`) exactly — it does, per the contract.
+- [ ] **CRITICAL note on duplicate helpers:** M1's `environment.Create` already writes `env.toml` and the `<workspace>/.acon` marker. If M1 exposes reusable helpers (e.g. `writeEnvConfig`/`writeMarker` or similar), DELETE the duplicate definitions above and call M1's. The duplicates are included only so this plan compiles standalone. If M1 already defines a function with the same name, `go build` reports `writeEnvConfig redeclared in this block` (or `writeMarker redeclared`) — in that case keep M1's and remove the copy here. `toml.Marshal` of `EnvConfig` must match M1's env.toml field names (`workspace_path`, `active_persona`) exactly — it does, per the contract.
 
 ### Step 5.3 — GREEN: wire `.gitignore` into M1 `Create`
 
@@ -910,17 +910,17 @@ func writeMarker(absWorkspace, hash string) error {
 
 ### Step 5.4 — Run + verify
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/environment/ ./internal/share/`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/environment/ ./internal/share/`
 - [ ] **Expected:** `ok` for both packages; `TestCreate_WritesGitignore`, `TestCloneInto_PopulatesAndOpens`, `TestGitignoreInSync` pass, and the Task 4 `share` round-trip tests now pass because `environment.CloneInto` exists.
 
 ### Step 5.5 — REFACTOR
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && gofmt -l internal/environment/ internal/share/ && go vet ./internal/environment/ ./internal/share/`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && gofmt -l internal/environment/ internal/share/ && go vet ./internal/environment/ ./internal/share/`
 - [ ] **Expected:** empty `gofmt`; clean `go vet`.
 
 ### Step 5.6 — COMMIT
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && git add internal/environment/clone.go internal/environment/clone_test.go internal/environment/environment.go && git commit -m "environment: add CloneInto and write secret-safe .gitignore on create"`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && git add internal/environment/clone.go internal/environment/clone_test.go internal/environment/environment.go && git commit -m "environment: add CloneInto and write secret-safe .gitignore on create"`
 
 **New types beyond contract:** `environment.CloneInto(workspace, remote string) (*Environment, error)` (new exported constructor in `internal/environment`); unexported helpers `writeGitignore`, `writeEnvConfig`, `writeMarker`, and the `defaultGitignore` constant (the latter three may be removed if M1 already provides equivalents). Flagged in the final summary.
 
@@ -943,7 +943,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -975,7 +975,7 @@ func initBareRemoteCLI(t *testing.T) string {
 }
 
 func TestCloneCmd_SetsUpEnvironmentForCwd(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 
 	// produce a source repo and push to a bare remote
 	src := t.TempDir()
@@ -999,14 +999,14 @@ func TestCloneCmd_SetsUpEnvironmentForCwd(t *testing.T) {
 	require.NoError(t, statErr)
 	_, statErr = os.Stat(filepath.Join(environment.EnvDir(hash), "env.toml"))
 	require.NoError(t, statErr)
-	marker, readErr := os.ReadFile(filepath.Join(dst, ".claude_git"))
+	marker, readErr := os.ReadFile(filepath.Join(dst, ".acon"))
 	require.NoError(t, readErr)
 	require.Equal(t, hash, string(marker))
 }
 ```
 
 - [ ] **Note on cwd-based hash:** the test compares against `environment.WorkspaceHash(dst)` using the same path the command sees via `os.Getwd`. macOS `t.TempDir()` may return a `/var` path symlinked to `/private/var`; `WorkspaceHash` cleans but does not resolve symlinks, so both sides hash the same string. The comparison stays valid regardless of the hash impl because it uses the same function the command uses.
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestCloneCmd`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestCloneCmd`
 - [ ] **Expected:** compile failure — `undefined: newCloneCmd`.
 
 ### Step 6.2 — GREEN: implement the command group
@@ -1021,8 +1021,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/share"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/share"
 	"github.com/spf13/cobra"
 )
 
@@ -1035,7 +1035,7 @@ func cwdWorkspace() (string, error) {
 	return filepath.Abs(wd)
 }
 
-// newPushCmd: `claude_git push [remote]` — secret-scan, then push (default remote "origin").
+// newPushCmd: `acon push [remote]` — secret-scan, then push (default remote "origin").
 func newPushCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "push [remote]",
@@ -1063,7 +1063,7 @@ func newPushCmd() *cobra.Command {
 	}
 }
 
-// newPullCmd: `claude_git pull [remote]` — fetch + integrate remote changes.
+// newPullCmd: `acon pull [remote]` — fetch + integrate remote changes.
 func newPullCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "pull [remote]",
@@ -1091,7 +1091,7 @@ func newPullCmd() *cobra.Command {
 	}
 }
 
-// newCloneCmd: `claude_git clone <remote>` — clone an existing persona repo into a
+// newCloneCmd: `acon clone <remote>` — clone an existing persona repo into a
 // new environment bound to the current workspace (team onboarding into an empty dir).
 func newCloneCmd() *cobra.Command {
 	return &cobra.Command{
@@ -1109,7 +1109,7 @@ func newCloneCmd() *cobra.Command {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(),
-				"Cloned %q into a new environment for %s.\nRun `claude_git list` to see available personas.\n",
+				"Cloned %q into a new environment for %s.\nRun `acon list` to see available personas.\n",
 				remote, env.Workspace)
 			return nil
 		},
@@ -1117,7 +1117,7 @@ func newCloneCmd() *cobra.Command {
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestCloneCmd`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestCloneCmd`
 - [ ] **Expected:** `ok` — the clone command sets up `repo/.git`, `env.toml`, and the marker for the cwd workspace.
 
 ### Step 6.3 — REFACTOR + register on root
@@ -1130,12 +1130,12 @@ func newCloneCmd() *cobra.Command {
 ```
 
 - [ ] **Note:** if M1's root builder uses a different variable name than `root` for the `*cobra.Command`, use that variable. Do not add business logic to `root.go`.
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && gofmt -l internal/cli/ && go vet ./internal/cli/ && go build ./...`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && gofmt -l internal/cli/ && go vet ./internal/cli/ && go build ./...`
 - [ ] **Expected:** empty `gofmt`; clean `go vet`; successful build.
 
 ### Step 6.4 — COMMIT
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && git add internal/cli/share.go internal/cli/share_test.go internal/cli/root.go && git commit -m "cli: add push, pull, clone commands"`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && git add internal/cli/share.go internal/cli/share_test.go internal/cli/root.go && git commit -m "cli: add push, pull, clone commands"`
 
 **New types beyond contract:** none (cobra command constructors + unexported `cwdWorkspace` helper).
 
@@ -1157,12 +1157,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPushClone_E2E_RoundTrip(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	bare := initBareRemoteCLI(t)
 
 	// --- producer: create env in workspace A, add a persona file, push ---
@@ -1205,17 +1205,17 @@ func TestPushClone_E2E_RoundTrip(t *testing.T) {
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestPushClone_E2E`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestPushClone_E2E`
 - [ ] **Expected:** PASS (all helpers and commands exist from Task 6). The assertion targets the explicitly committed `coder` file, so the test is robust to M1's auto-commit policy.
 
 ### Step 7.2 — REFACTOR
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && gofmt -l internal/cli/ && go vet ./internal/cli/`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && gofmt -l internal/cli/ && go vet ./internal/cli/`
 - [ ] **Expected:** empty `gofmt`; clean `go vet`.
 
 ### Step 7.3 — COMMIT
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && git add internal/cli/share_e2e_test.go && git commit -m "cli: add end-to-end push/clone round-trip test"`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && git add internal/cli/share_e2e_test.go && git commit -m "cli: add end-to-end push/clone round-trip test"`
 
 **New types beyond contract:** none.
 
@@ -1223,7 +1223,7 @@ func TestPushClone_E2E_RoundTrip(t *testing.T) {
 
 ## Task 8 — MODIFY `internal/cli/init.go`: `--from <remote>` branch
 
-Extend the M1 `init` command with a `--from <remote>` flag. When set, `init` does NOT seed `_base` from the local `.claude/`; instead it clones an existing persona repo for the current workspace (team onboarding) by delegating to `share.Clone`. This is the symmetric onboarding path to `clone`, but lives on `init` per the CLI spec (§11: `claude_git init [--from <remote>]`).
+Extend the M1 `init` command with a `--from <remote>` flag. When set, `init` does NOT seed `_base` from the local `.claude/`; instead it clones an existing persona repo for the current workspace (team onboarding) by delegating to `share.Clone`. This is the symmetric onboarding path to `clone`, but lives on `init` per the CLI spec (§11: `acon init [--from <remote>]`).
 
 ### Step 8.1 — RED: write the failing test
 
@@ -1237,12 +1237,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
 func TestInitFrom_ClonesExistingRepo(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 
 	// produce a source repo with a reviewer persona, push to bare remote
 	src := t.TempDir()
@@ -1274,13 +1274,13 @@ func TestInitFrom_ClonesExistingRepo(t *testing.T) {
 	require.NoError(t, readErr)
 	require.Contains(t, string(data), "name = \"reviewer\"")
 
-	marker, mErr := os.ReadFile(filepath.Join(dst, ".claude_git"))
+	marker, mErr := os.ReadFile(filepath.Join(dst, ".acon"))
 	require.NoError(t, mErr)
 	require.Equal(t, hash, string(marker))
 }
 ```
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestInitFrom`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestInitFrom`
 - [ ] **Expected:** FAIL — M1 `init` has no `--from` flag/branch; it seeds an empty `_base` instead of cloning, so `personas/reviewer/persona.toml` is absent (or the unknown-flag error surfaces).
 
 ### Step 8.2 — GREEN: add the `--from` flag and branch to M1 `init.go`
@@ -1311,27 +1311,27 @@ func TestInitFrom_ClonesExistingRepo(t *testing.T) {
              return err
          }
          fmt.Fprintf(cmd.OutOrStdout(),
-             "Onboarded from %q into a new environment for %s.\nRun `claude_git list` to see available personas.\n",
+             "Onboarded from %q into a new environment for %s.\nRun `acon list` to see available personas.\n",
              fromRemote, env.Workspace)
          return nil
      }
      // ... M1's existing seed-from-local-.claude logic continues here unchanged ...
      ```
 
-  4. **Imports:** ensure `internal/cli/init.go` imports `"fmt"` and `"github.com/a2ngerer/claude-containers/internal/share"`. `cwdWorkspace` is already defined in `internal/cli/share.go` (same package), so no extra import is needed for it.
+  4. **Imports:** ensure `internal/cli/init.go` imports `"fmt"` and `"github.com/a2ngerer/agent-containers/internal/share"`. `cwdWorkspace` is already defined in `internal/cli/share.go` (same package), so no extra import is needed for it.
 
 - [ ] **Decision (recorded):** the `--from` branch fully REPLACES the seeding path — it does NOT both clone and seed. Cloning brings the team's `_base` and personas verbatim; re-seeding from the onboarding machine's local `.claude/` would pollute the shared baseline. The two are mutually exclusive by design (spec §11: "seed `_base` from the existing `.claude/`, **or** clone an existing persona repo").
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run TestInitFrom`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run TestInitFrom`
 - [ ] **Expected:** `ok` — `init --from <bare>` clones the reviewer persona and sets the marker.
 
 ### Step 8.3 — REFACTOR
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && gofmt -l internal/cli/ && go vet ./internal/cli/ && go build ./...`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && gofmt -l internal/cli/ && go vet ./internal/cli/ && go build ./...`
 - [ ] **Expected:** empty `gofmt`; clean `go vet`; successful build.
 
 ### Step 8.4 — COMMIT
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && git add internal/cli/init.go internal/cli/init_from_test.go && git commit -m "cli: add init --from for team onboarding via clone"`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && git add internal/cli/init.go internal/cli/init_from_test.go && git commit -m "cli: add init --from for team onboarding via clone"`
 
 **New types beyond contract:** none (a new `--from` flag and a branch on the existing M1 command).
 
@@ -1343,17 +1343,17 @@ Confirm the whole milestone compiles, all tests pass, and the package layering (
 
 ### Step 9.1 — Full build + test + vet
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./... && go vet ./...`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go build ./... && go test ./... && go vet ./...`
 - [ ] **Expected:** build succeeds; `ok` for `internal/share`, `internal/environment`, `internal/cli`; `go vet` reports nothing.
 
 ### Step 9.2 — Import-cycle guard
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && go list -deps ./internal/environment/ | grep -c 'github.com/a2ngerer/claude-containers/internal/share' || true`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && go list -deps ./internal/environment/ | grep -c 'github.com/a2ngerer/agent-containers/internal/share' || true`
 - [ ] **Expected:** `0` — `environment` must not depend on `share` (the gitignore is inlined; the drift test in Task 5 keeps them in sync).
 
 ### Step 9.3 — COMMIT (if any formatting fixups were needed)
 
-- [ ] **Run:** `cd /Users/angeral/Repositories/claude_git && git add -A && git commit -m "share: M4 milestone green (build, test, vet)" || echo "nothing to commit"`
+- [ ] **Run:** `cd /Users/angeral/Repositories/agent-containers && git add -A && git commit -m "share: M4 milestone green (build, test, vet)" || echo "nothing to commit"`
 
 ---
 
@@ -1375,7 +1375,7 @@ Confirm the whole milestone compiles, all tests pass, and the package layering (
 
 **Packages:** `internal/share` (new), `internal/environment` (extended), `internal/cli` (extended).
 
-**Commands:** `claude_git push [remote]`, `claude_git pull [remote]`, `claude_git clone <remote>`, `claude_git init --from <remote>`.
+**Commands:** `acon push [remote]`, `acon pull [remote]`, `acon clone <remote>`, `acon init --from <remote>`.
 
 **New types/symbols beyond the Architecture Contract:**
 - `internal/share`: `ScanForSecrets(dir string) ([]string, error)` (named in the milestone scope, not in the contract sketch); `Push(e *environment.Environment, remote string) error`; `Pull(e *environment.Environment, remote string) error`; `Clone(remote, destWorkspace string) (*environment.Environment, error)`; sentinel `var ErrSecretsFound`. (`DefaultGitignore()` IS in the contract sketch — not new.)
@@ -1385,7 +1385,7 @@ Confirm the whole milestone compiles, all tests pass, and the package layering (
 **Exact `init.go` modify location for `--from`:** In `internal/cli/init.go`, function `newInitCmd() *cobra.Command`:
 1. Declare `var fromRemote string` and bind `cmd.Flags().StringVar(&fromRemote, "from", "", "clone an existing persona repo from this git remote instead of seeding _base")` after the command is built, in the same scope as `RunE`.
 2. As the FIRST statement inside `RunE`, add the short-circuit: `if fromRemote != "" { ws, err := cwdWorkspace(); ...; env, err := share.Clone(fromRemote, ws); ...; return nil }` — it clones via `share.Clone` and returns before M1's local-`.claude/` seeding path.
-3. Add imports `"fmt"` and `github.com/a2ngerer/claude-containers/internal/share` to `init.go`.
+3. Add imports `"fmt"` and `github.com/a2ngerer/agent-containers/internal/share` to `init.go`.
 The clone branch and the seed branch are mutually exclusive (spec §11: seed `_base` **or** clone).
 
 **`.gitignore` placement decision:** written eagerly in `environment.Create` (Task 5.3), NOT lazily at first push — it must protect the very first commit `init` makes. `share.Push` re-asserts via `ScanForSecrets` as a runtime backstop (defense in depth).

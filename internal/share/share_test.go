@@ -7,16 +7,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/storage"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/storage"
 	"github.com/stretchr/testify/require"
 )
 
-// withToolHome points CLAUDE_GIT_HOME at a fresh temp dir for the duration of one test.
+// withToolHome points ACON_HOME at a fresh temp dir for the duration of one test.
 func withToolHome(t *testing.T) {
 	t.Helper()
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 }
 
 // initBareRemote creates an empty bare git repo at a temp dir and returns the path.

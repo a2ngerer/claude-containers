@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (- [ ]) syntax for tracking.
 
-**Goal:** Stand up the `claude_git` skeleton so that `claude_git init` binds a workspace end-to-end, seeds a `_base` persona from the existing `.claude/`, and `list`/`status` report it — backed by a git-backed storage engine that round-trips against a real temp repo.
+**Goal:** Stand up the `acon` skeleton so that `acon init` binds a workspace end-to-end, seeds a `_base` persona from the existing `.claude/`, and `list`/`status` report it — backed by a git-backed storage engine that round-trips against a real temp repo.
 
-**Architecture:** Three layers per the architecture contract: a pure `domain` package (types only, no I/O), a `storage` package hiding a go-git engine behind the `StorageEngine` interface, and an `environment` package that binds the tool to one workspace via path hashing and `env.toml`. The `cli` package is thin and delegates to `environment`/`probe`; `cmd/claude_git` wires the cobra root.
+**Architecture:** Three layers per the architecture contract: a pure `domain` package (types only, no I/O), a `storage` package hiding a go-git engine behind the `StorageEngine` interface, and an `environment` package that binds the tool to one workspace via path hashing and `env.toml`. The `cli` package is thin and delegates to `environment`/`probe`; `cmd/acon` wires the cobra root.
 
 **Tech Stack:** Go 1.23, `spf13/cobra` + `spf13/viper`, `go-git/go-git/v5` (pure-Go git plumbing), `pelletier/go-toml/v2`, `stretchr/testify/require`.
 
@@ -16,8 +16,8 @@
 
 | File | Responsibility |
 |---|---|
-| `go.mod` | Module `github.com/a2ngerer/claude-containers`, Go 1.23, pinned deps (cobra, viper, go-git/v5, go-toml/v2, testify). |
-| `cmd/claude_git/main.go` | Entrypoint: build the cobra root via `cli.NewRootCmd()` and `Execute()` it; exit non-zero on error. |
+| `go.mod` | Module `github.com/a2ngerer/agent-containers`, Go 1.23, pinned deps (cobra, viper, go-git/v5, go-toml/v2, testify). |
+| `cmd/acon/main.go` | Entrypoint: build the cobra root via `cli.NewRootCmd()` and `Execute()` it; exit non-zero on error. |
 | `internal/domain/persona.go` | `Persona`, `Config`, `SkillSet`, `SubagentSet`, `MCPConfig`, `Metadata`; `Persona.IsLayer()`; TOML load/save helpers with `[enforcement.tools]` allow/deny mapping. |
 | `internal/domain/enforcement.go` | `Enforcement` (tools allow/deny carried in `-`-tagged fields). |
 | `internal/domain/snapshot.go` | `SnapshotID`, `Snapshot`, `Tag`, `Timeline`. |
@@ -30,18 +30,18 @@
 | `internal/storage/engine_test.go` | Compile-time interface-shape check via an in-test fake. |
 | `internal/storage/git_test.go` | Object/tree/snapshot/tag round-trips and remote add against a real temp repo. |
 | `internal/environment/paths.go` | `WorkspaceHash`, `ToolHome`, `EnvDir`, `RepoDir`, `CacheDir`. |
-| `internal/environment/paths_test.go` | Hash stability, `CLAUDE_GIT_HOME` override, path composition. |
+| `internal/environment/paths_test.go` | Hash stability, `ACON_HOME` override, path composition. |
 | `internal/environment/environment.go` | `EnvConfig`, `Environment`, `Create`, `Open`, `ListPersonas`, `LoadPersona`, `SavePersona`, `SetActive`. |
 | `internal/environment/environment_test.go` | `Create`/`Open` lifecycle, `ErrNotInitialized`, persona CRUD, `SetActive`. |
 | `internal/probe/probe.go` | `IsClaudeTracked` via `git ls-files --error-unmatch .claude`. |
 | `internal/probe/probe_test.go` | Tracked vs. untracked vs. non-repo workspace. |
 | `internal/cli/root.go` | `NewRootCmd()`: cobra root + global flags; wires `init`/`list`/`status`. |
 | `internal/cli/stubs.go` | Temporary command stubs so the root compiles before each command file lands (shrinks per task, deleted in Task 11). |
-| `internal/cli/init.go` | `claude_git init`: bind workspace, create env dirs/repo/env.toml, import `.claude/` + `CLAUDE.md` as `_base`, write `.claude_git` marker, probe + warn. |
-| `internal/cli/list.go` | `claude_git list`/`ls`: print personas with active marker + version. |
-| `internal/cli/status.go` | `claude_git status`: print active persona + workspace + repo path. |
+| `internal/cli/init.go` | `acon init`: bind workspace, create env dirs/repo/env.toml, import `.claude/` + `CLAUDE.md` as `_base`, write `.acon` marker, probe + warn. |
+| `internal/cli/list.go` | `acon list`/`ls`: print personas with active marker + version. |
+| `internal/cli/status.go` | `acon status`: print active persona + workspace + repo path. |
 | `internal/cli/root_test.go` | Root command shape: `Use`, registered subcommands, `--help`. |
-| `internal/cli/init_test.go` | End-to-end `init` over a temp workspace + temp `CLAUDE_GIT_HOME`. |
+| `internal/cli/init_test.go` | End-to-end `init` over a temp workspace + temp `ACON_HOME`. |
 | `internal/cli/list_test.go` | `list` shows `_base`; errors when not initialized. |
 | `internal/cli/status_test.go` | `status` shows workspace/hash/active; reflects `SetActive`; errors when not initialized. |
 
@@ -51,7 +51,7 @@
 
 **Files:**
 - Create: `go.mod`
-- Create: `cmd/claude_git/main.go`
+- Create: `cmd/acon/main.go`
 - Create: `internal/cli/root.go`
 - Create: `internal/cli/stubs.go`
 - Test: `internal/cli/root_test.go`
@@ -72,7 +72,7 @@ import (
 
 func TestNewRootCmd_Use(t *testing.T) {
 	cmd := NewRootCmd()
-	require.Equal(t, "claude_git", cmd.Use)
+	require.Equal(t, "acon", cmd.Use)
 }
 
 func TestNewRootCmd_HasSubcommands(t *testing.T) {
@@ -99,7 +99,7 @@ func TestRootCmd_HelpDoesNotError(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/
 ```
 
 Expected: compilation failure — `go.mod` does not exist yet, so the command errors with `go: cannot find main module` (non-zero exit). After `go.mod` exists but before `root.go`, the failure is `undefined: NewRootCmd`.
@@ -109,7 +109,7 @@ Expected: compilation failure — `go.mod` does not exist yet, so the command er
 Create `go.mod`:
 
 ```
-module github.com/a2ngerer/claude-containers
+module github.com/a2ngerer/agent-containers
 
 go 1.23
 
@@ -132,12 +132,12 @@ import (
 )
 
 // NewRootCmd builds the cobra root command with all global flags and the
-// M1 subcommands wired in. cmd/claude_git/main.go Execute()s the result.
+// M1 subcommands wired in. cmd/acon/main.go Execute()s the result.
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:           "claude_git",
+		Use:           "acon",
 		Short:         "Version control and isolated, swappable environments for the Claude Code config layer",
-		Long:          "claude_git treats CLAUDE.md plus the .claude/ directory as a versioned, swappable, shareable persona — \"Docker for Claude agent environments.\"",
+		Long:          "acon treats CLAUDE.md plus the .claude/ directory as a versioned, swappable, shareable persona — \"Docker for Claude agent environments.\"",
 		SilenceUsage:  true,
 		SilenceErrors: false,
 	}
@@ -154,7 +154,7 @@ func NewRootCmd() *cobra.Command {
 }
 ```
 
-Create `cmd/claude_git/main.go`:
+Create `cmd/acon/main.go`:
 
 ```go
 package main
@@ -162,7 +162,7 @@ package main
 import (
 	"os"
 
-	"github.com/a2ngerer/claude-containers/internal/cli"
+	"github.com/a2ngerer/agent-containers/internal/cli"
 )
 
 func main() {
@@ -198,21 +198,21 @@ func newStatusCmd() *cobra.Command {
 Then fetch and pin dependencies:
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go mod tidy
+cd /Users/angeral/Repositories/agent-containers && go mod tidy
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./internal/cli/
+cd /Users/angeral/Repositories/agent-containers && go build ./... && go test ./internal/cli/
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/cli`).
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/cli`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git init -q 2>/dev/null; git add go.mod go.sum cmd/claude_git/main.go internal/cli/root.go internal/cli/stubs.go internal/cli/root_test.go && git commit -m "M1: module bootstrap, cobra root, entrypoint"
+cd /Users/angeral/Repositories/agent-containers && git init -q 2>/dev/null; git add go.mod go.sum cmd/acon/main.go internal/cli/root.go internal/cli/stubs.go internal/cli/root_test.go && git commit -m "M1: module bootstrap, cobra root, entrypoint"
 ```
 
 ---
@@ -300,14 +300,14 @@ func TestSentinelErrors(t *testing.T) {
 	require.True(t, errors.Is(ErrPersonaNotFound, ErrPersonaNotFound))
 	require.NotEqual(t, ErrPersonaNotFound.Error(), ErrNotInitialized.Error())
 	require.NotEqual(t, ErrLocked.Error(), ErrVerifyMismatch.Error())
-	require.Contains(t, ErrNotInitialized.Error(), "claude_git init")
+	require.Contains(t, ErrNotInitialized.Error(), "acon init")
 }
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/domain/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/domain/
 ```
 
 Expected: compilation failure — `undefined: Snapshot`, `undefined: Enforcement`, `undefined: Attestation`, `undefined: ErrPersonaNotFound`, etc. Non-zero exit.
@@ -394,7 +394,7 @@ import "errors"
 var (
 	ErrPersonaNotFound = errors.New("persona not found")
 	ErrPersonaExists   = errors.New("persona already exists")
-	ErrNotInitialized  = errors.New("workspace not initialized (run: claude_git init)")
+	ErrNotInitialized  = errors.New("workspace not initialized (run: acon init)")
 	ErrLocked          = errors.New("environment is locked by another process")
 	ErrVerifyMismatch  = errors.New("materialized environment does not match manifest")
 	ErrLayerNotFound   = errors.New("extends layer not found")
@@ -404,15 +404,15 @@ var (
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/domain/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/domain/
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/domain`).
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/domain`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/domain/enforcement.go internal/domain/snapshot.go internal/domain/attestation.go internal/domain/errors.go internal/domain/types_test.go && git commit -m "M1: domain types (enforcement, snapshot, tag, timeline, attestation, errors)"
+cd /Users/angeral/Repositories/agent-containers && git add internal/domain/enforcement.go internal/domain/snapshot.go internal/domain/attestation.go internal/domain/errors.go internal/domain/types_test.go && git commit -m "M1: domain types (enforcement, snapshot, tag, timeline, attestation, errors)"
 ```
 
 ---
@@ -527,7 +527,7 @@ func TestSavePersonaTOML_RoundTrip(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/domain/ -run 'Persona|IsLayer'
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/domain/ -run 'Persona|IsLayer'
 ```
 
 Expected: compilation failure — `undefined: Persona`, `undefined: LoadPersonaTOML`, `undefined: SavePersonaTOML`. Non-zero exit.
@@ -665,15 +665,15 @@ func SavePersonaTOML(p Persona, path string) error {
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/domain/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/domain/
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/domain`) — all domain tests, including the round-trip.
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/domain`) — all domain tests, including the round-trip.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/domain/persona.go internal/domain/persona_test.go && git commit -m "M1: Persona type + TOML load/save with [enforcement.tools] mapping"
+cd /Users/angeral/Repositories/agent-containers && git add internal/domain/persona.go internal/domain/persona_test.go && git commit -m "M1: Persona type + TOML load/save with [enforcement.tools] mapping"
 ```
 
 ---
@@ -696,7 +696,7 @@ package storage
 import (
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -740,7 +740,7 @@ func TestObjectIDIsString(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/storage/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/storage/
 ```
 
 Expected: compilation failure — `undefined: StorageEngine`, `undefined: ObjectID`. Non-zero exit.
@@ -753,7 +753,7 @@ Create `internal/storage/engine.go`:
 // internal/storage/engine.go
 package storage
 
-import "github.com/a2ngerer/claude-containers/internal/domain"
+import "github.com/a2ngerer/agent-containers/internal/domain"
 
 type ObjectID string
 
@@ -789,15 +789,15 @@ type StorageEngine interface {
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/storage/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/storage/
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/storage`).
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/storage`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/storage/engine.go internal/storage/engine_test.go && git commit -m "M1: StorageEngine interface + ObjectID"
+cd /Users/angeral/Repositories/agent-containers && git add internal/storage/engine.go internal/storage/engine_test.go && git commit -m "M1: StorageEngine interface + ObjectID"
 ```
 
 ---
@@ -824,7 +824,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -978,7 +978,7 @@ func TestAddRemote_Persists(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/storage/ -run Git
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/storage/ -run Git
 ```
 
 Expected: compilation failure — `undefined: OpenGit`. Non-zero exit.
@@ -999,7 +999,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -1370,15 +1370,15 @@ func authorEmail(author string) string {
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/storage/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/storage/
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/storage`) — all object/tree/snapshot/timeline/tag/remote round-trips green against the temp repo.
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/storage`) — all object/tree/snapshot/timeline/tag/remote round-trips green against the temp repo.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/storage/git.go internal/storage/git_test.go && git commit -m "M1: GitStorageEngine (go-git) - objects, trees, snapshots, tags, remotes"
+cd /Users/angeral/Repositories/agent-containers && git add internal/storage/git.go internal/storage/git_test.go && git commit -m "M1: GitStorageEngine (go-git) - objects, trees, snapshots, tags, remotes"
 ```
 
 ---
@@ -1389,7 +1389,7 @@ cd /Users/angeral/Repositories/claude_git && git add internal/storage/git.go int
 - Create: `internal/environment/paths.go`
 - Test: `internal/environment/paths_test.go`
 
-`WorkspaceHash` = sha1-hex of `filepath.Clean(absolute path)`. `ToolHome` respects `CLAUDE_GIT_HOME`, else `~/.claude_git`. The remaining helpers compose paths.
+`WorkspaceHash` = sha1-hex of `filepath.Clean(absolute path)`. `ToolHome` respects `ACON_HOME`, else `~/.acon`. The remaining helpers compose paths.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1425,18 +1425,18 @@ func TestWorkspaceHash_DifferentPathsDiffer(t *testing.T) {
 }
 
 func TestToolHome_RespectsEnv(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", "/tmp/cg-home")
+	t.Setenv("ACON_HOME", "/tmp/cg-home")
 	require.Equal(t, "/tmp/cg-home", ToolHome())
 }
 
 func TestToolHome_DefaultUnderHome(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", "")
+	t.Setenv("ACON_HOME", "")
 	t.Setenv("HOME", "/tmp/fake-home")
-	require.Equal(t, filepath.Join("/tmp/fake-home", ".claude_git"), ToolHome())
+	require.Equal(t, filepath.Join("/tmp/fake-home", ".acon"), ToolHome())
 }
 
 func TestDerivedPaths(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", "/tmp/cg")
+	t.Setenv("ACON_HOME", "/tmp/cg")
 	hash := "abc123"
 	require.Equal(t, filepath.Join("/tmp/cg", "environments", hash), EnvDir(hash))
 	require.Equal(t, filepath.Join("/tmp/cg", "environments", hash, "repo"), RepoDir(hash))
@@ -1447,7 +1447,7 @@ func TestDerivedPaths(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/environment/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/environment/
 ```
 
 Expected: compilation failure — `undefined: WorkspaceHash`, `undefined: ToolHome`, etc. Non-zero exit.
@@ -1474,17 +1474,17 @@ func WorkspaceHash(absWorkspace string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// ToolHome returns the tool's root directory. CLAUDE_GIT_HOME overrides;
-// otherwise ~/.claude_git.
+// ToolHome returns the tool's root directory. ACON_HOME overrides;
+// otherwise ~/.acon.
 func ToolHome() string {
-	if h := os.Getenv("CLAUDE_GIT_HOME"); h != "" {
+	if h := os.Getenv("ACON_HOME"); h != "" {
 		return h
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		home = "."
 	}
-	return filepath.Join(home, ".claude_git")
+	return filepath.Join(home, ".acon")
 }
 
 // EnvDir is the per-workspace environment directory.
@@ -1502,15 +1502,15 @@ func CacheDir(hash, persona string) string {
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/environment/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/environment/
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/environment`).
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/environment`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/environment/paths.go internal/environment/paths_test.go && git commit -m "M1: environment paths (WorkspaceHash, ToolHome, EnvDir, RepoDir, CacheDir)"
+cd /Users/angeral/Repositories/agent-containers && git add internal/environment/paths.go internal/environment/paths_test.go && git commit -m "M1: environment paths (WorkspaceHash, ToolHome, EnvDir, RepoDir, CacheDir)"
 ```
 
 ---
@@ -1535,13 +1535,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
 func setupHome(t *testing.T) {
 	t.Helper()
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 }
 
 func TestCreate_MakesDirsAndConfig(t *testing.T) {
@@ -1624,7 +1624,7 @@ func TestSetActive_Persists(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/environment/ -run 'Create|Open|Persona|SetActive'
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/environment/ -run 'Create|Open|Persona|SetActive'
 ```
 
 Expected: compilation failure — `undefined: Create`, `undefined: Open`, `undefined: Environment`. Non-zero exit.
@@ -1643,8 +1643,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/storage"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/storage"
 	toml "github.com/pelletier/go-toml/v2"
 )
 
@@ -1789,15 +1789,15 @@ func writeEnvConfig(hash string, cfg EnvConfig) error {
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/environment/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/environment/
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/environment`) — paths and environment tests both green.
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/environment`) — paths and environment tests both green.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/environment/environment.go internal/environment/environment_test.go && git commit -m "M1: Environment Create/Open, persona CRUD, SetActive"
+cd /Users/angeral/Repositories/agent-containers && git add internal/environment/environment.go internal/environment/environment_test.go && git commit -m "M1: Environment Create/Open, persona CRUD, SetActive"
 ```
 
 ---
@@ -1883,7 +1883,7 @@ func TestIsClaudeTracked_NotAGitRepo(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/probe/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/probe/
 ```
 
 Expected: compilation failure — `undefined: IsClaudeTracked`. Non-zero exit.
@@ -1925,15 +1925,15 @@ func IsClaudeTracked(workspace string) (bool, error) {
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/probe/
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/probe/
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/probe`).
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/probe`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/probe/probe.go internal/probe/probe_test.go && git commit -m "M1: workspace probe (IsClaudeTracked)"
+cd /Users/angeral/Repositories/agent-containers && git add internal/probe/probe.go internal/probe/probe_test.go && git commit -m "M1: workspace probe (IsClaudeTracked)"
 ```
 
 ---
@@ -1945,7 +1945,7 @@ cd /Users/angeral/Repositories/claude_git && git add internal/probe/probe.go int
 - Modify: `internal/cli/stubs.go` (delete the `newInitCmd` stub)
 - Test: `internal/cli/init_test.go`
 
-`init` resolves the workspace, calls `environment.Create`, imports the existing `.claude/` directory and `CLAUDE.md` into the `_base` persona (content copied into `repo/personas/_base/`, plus a `_base` persona.toml), writes the `.claude_git` marker (one line = workspace hash) into the workspace, and probes for a tracked `.claude/` — printing a loud warning if found. Activation never writes into the workspace; the marker is the only file `init` creates there.
+`init` resolves the workspace, calls `environment.Create`, imports the existing `.claude/` directory and `CLAUDE.md` into the `_base` persona (content copied into `repo/personas/_base/`, plus a `_base` persona.toml), writes the `.acon` marker (one line = workspace hash) into the workspace, and probes for a tracked `.claude/` — printing a loud warning if found. Activation never writes into the workspace; the marker is the only file `init` creates there.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1961,7 +1961,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1987,7 +1987,7 @@ func seedWorkspace(t *testing.T) string {
 }
 
 func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := seedWorkspace(t)
 
 	out, err := runCLI(t, "init", "--workspace", ws)
@@ -1995,7 +1995,7 @@ func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
 	require.Contains(t, out, "Initialized")
 
 	// marker file written into the workspace, one line = hash
-	marker, err := os.ReadFile(filepath.Join(ws, ".claude_git"))
+	marker, err := os.ReadFile(filepath.Join(ws, ".acon"))
 	require.NoError(t, err)
 	require.Equal(t, environment.WorkspaceHash(filepath.Clean(ws)), strings.TrimSpace(string(marker)))
 
@@ -2023,7 +2023,7 @@ func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
 }
 
 func TestInit_NoExistingClaude(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 
 	out, err := runCLI(t, "init", "--workspace", ws)
@@ -2039,7 +2039,7 @@ func TestInit_NoExistingClaude(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run Init
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run Init
 ```
 
 Expected: behaviour failure — the Task-1 stub `newInitCmd` does nothing, so `Initialized` is never printed and the marker/`_base` assertions fail. (If `init.go` is added before the stub is removed, the failure is instead `newInitCmd redeclared in this block`.) Non-zero exit.
@@ -2076,9 +2076,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/probe"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/probe"
 	"github.com/spf13/cobra"
 )
 
@@ -2124,12 +2124,12 @@ func runInit(out io.Writer, workspace string) error {
 	}
 
 	// marker file: one line = workspace hash
-	marker := filepath.Join(workspace, ".claude_git")
+	marker := filepath.Join(workspace, ".acon")
 	if err := os.WriteFile(marker, []byte(env.Hash+"\n"), 0o644); err != nil {
 		return fmt.Errorf("write marker: %w", err)
 	}
 
-	fmt.Fprintf(out, "Initialized claude_git environment for %s\n", workspace)
+	fmt.Fprintf(out, "Initialized acon environment for %s\n", workspace)
 	fmt.Fprintf(out, "  hash:   %s\n", env.Hash)
 	fmt.Fprintf(out, "  base:   _base persona seeded from existing .claude/ and CLAUDE.md\n")
 
@@ -2140,9 +2140,9 @@ func runInit(out io.Writer, workspace string) error {
 	if tracked {
 		fmt.Fprintln(out, "")
 		fmt.Fprintln(out, "WARNING: .claude/ is tracked by this workspace's code repository.")
-		fmt.Fprintln(out, "  claude_git never writes into the workspace, so this is harmless to claude_git,")
+		fmt.Fprintln(out, "  acon never writes into the workspace, so this is harmless to acon,")
 		fmt.Fprintln(out, "  but you may want to untrack it (git rm -r --cached .claude) to avoid committing")
-		fmt.Fprintln(out, "  agent config into your code history. claude_git will not touch your code repo.")
+		fmt.Fprintln(out, "  agent config into your code history. acon will not touch your code repo.")
 	}
 	return nil
 }
@@ -2232,15 +2232,15 @@ func copyFile(src, dst string) error {
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./internal/cli/ -run Init
+cd /Users/angeral/Repositories/agent-containers && go build ./... && go test ./internal/cli/ -run Init
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/cli`).
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/cli`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/init.go internal/cli/stubs.go internal/cli/init_test.go && git commit -m "M1: init command - bind workspace, import _base, marker, probe warning"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/init.go internal/cli/stubs.go internal/cli/init_test.go && git commit -m "M1: init command - bind workspace, import _base, marker, probe warning"
 ```
 
 ---
@@ -2270,7 +2270,7 @@ import (
 )
 
 func TestList_ShowsBaseAfterInit(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(ws, "CLAUDE.md"), []byte("# rules\n"), 0o644))
 
@@ -2284,7 +2284,7 @@ func TestList_ShowsBaseAfterInit(t *testing.T) {
 }
 
 func TestList_NotInitialized(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	_, err := runCLI(t, "list", "--workspace", ws)
 	require.Error(t, err)
@@ -2295,7 +2295,7 @@ func TestList_NotInitialized(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run List
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run List
 ```
 
 Expected: behaviour failure — the stub `newListCmd` prints nothing, so `_base`/`0.1.0` are absent and `TestList_NotInitialized` gets no error. (If `list.go` is added before the stub is removed: `newListCmd redeclared`.) Non-zero exit.
@@ -2325,7 +2325,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/spf13/cobra"
 )
 
@@ -2376,15 +2376,15 @@ func runList(out io.Writer, workspace string) error {
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./internal/cli/ -run List
+cd /Users/angeral/Repositories/agent-containers && go build ./... && go test ./internal/cli/ -run List
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/cli`).
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/cli`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/list.go internal/cli/stubs.go internal/cli/list_test.go && git commit -m "M1: list command - personas with active marker and version"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/list.go internal/cli/stubs.go internal/cli/list_test.go && git commit -m "M1: list command - personas with active marker and version"
 ```
 
 ---
@@ -2410,12 +2410,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
 func TestStatus_AfterInit(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(ws, "CLAUDE.md"), []byte("# rules\n"), 0o644))
 
@@ -2430,7 +2430,7 @@ func TestStatus_AfterInit(t *testing.T) {
 }
 
 func TestStatus_ReflectsActivePersona(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(ws, "CLAUDE.md"), []byte("# rules\n"), 0o644))
 	_, err := runCLI(t, "init", "--workspace", ws)
@@ -2446,7 +2446,7 @@ func TestStatus_ReflectsActivePersona(t *testing.T) {
 }
 
 func TestStatus_NotInitialized(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	_, err := runCLI(t, "status", "--workspace", ws)
 	require.Error(t, err)
@@ -2457,7 +2457,7 @@ func TestStatus_NotInitialized(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go test ./internal/cli/ -run Status
+cd /Users/angeral/Repositories/agent-containers && go test ./internal/cli/ -run Status
 ```
 
 Expected: behaviour failure — the stub `newStatusCmd` prints nothing and never errors. (If `status.go` is added before the stub is removed: `newStatusCmd redeclared`.) Non-zero exit.
@@ -2467,7 +2467,7 @@ Expected: behaviour failure — the stub `newStatusCmd` prints nothing and never
 Delete `internal/cli/stubs.go` (all three commands now have real files):
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && rm internal/cli/stubs.go
+cd /Users/angeral/Repositories/agent-containers && rm internal/cli/stubs.go
 ```
 
 Create `internal/cli/status.go`:
@@ -2480,7 +2480,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/spf13/cobra"
 )
 
@@ -2518,15 +2518,15 @@ func runStatus(out io.Writer, workspace string) error {
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./internal/cli/
+cd /Users/angeral/Repositories/agent-containers && go build ./... && go test ./internal/cli/
 ```
 
-Expected: PASS (`ok  github.com/a2ngerer/claude-containers/internal/cli`) — all CLI tests (root, init, list, status) green.
+Expected: PASS (`ok  github.com/a2ngerer/agent-containers/internal/cli`) — all CLI tests (root, init, list, status) green.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add internal/cli/status.go internal/cli/status_test.go && git rm internal/cli/stubs.go 2>/dev/null; git add -A && git commit -m "M1: status command - active persona and workspace"
+cd /Users/angeral/Repositories/agent-containers && git add internal/cli/status.go internal/cli/status_test.go && git rm internal/cli/stubs.go 2>/dev/null; git add -A && git commit -m "M1: status command - active persona and workspace"
 ```
 
 ---
@@ -2536,14 +2536,14 @@ cd /Users/angeral/Repositories/claude_git && git add internal/cli/status.go inte
 **Files:**
 - Test: (no new files) — run the whole suite and a real `init`/`list`/`status` round-trip.
 
-This task is the milestone exit check from the contract: `go build ./... && go test ./...` green, and `claude_git init` works end-to-end with `list` showing `_base` and `status` showing the active persona + workspace.
+This task is the milestone exit check from the contract: `go build ./... && go test ./...` green, and `acon init` works end-to-end with `list` showing `_base` and `status` showing the active persona + workspace.
 
 - [ ] **Step 1: Write the failing test**
 
 No new test file. The "failing test" here is the full suite plus a manual smoke run; if any earlier task regressed, this surfaces it. Run:
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go vet ./...
+cd /Users/angeral/Repositories/agent-containers && go vet ./...
 ```
 
 Expected initially: clean. If `go vet` reports anything, fix it before proceeding (this is the point of the gate).
@@ -2551,17 +2551,17 @@ Expected initially: clean. If `go vet` reports anything, fix it before proceedin
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./...
+cd /Users/angeral/Repositories/agent-containers && go build ./... && go test ./...
 ```
 
 Expected: all packages PASS. If any package fails, that is the signal to fix it in this task before the milestone closes:
 
 ```
-ok  github.com/a2ngerer/claude-containers/internal/cli
-ok  github.com/a2ngerer/claude-containers/internal/domain
-ok  github.com/a2ngerer/claude-containers/internal/environment
-ok  github.com/a2ngerer/claude-containers/internal/probe
-ok  github.com/a2ngerer/claude-containers/internal/storage
+ok  github.com/a2ngerer/agent-containers/internal/cli
+ok  github.com/a2ngerer/agent-containers/internal/domain
+ok  github.com/a2ngerer/agent-containers/internal/environment
+ok  github.com/a2ngerer/agent-containers/internal/probe
+ok  github.com/a2ngerer/agent-containers/internal/storage
 ```
 
 - [ ] **Step 3: Write minimal implementation**
@@ -2569,9 +2569,9 @@ ok  github.com/a2ngerer/claude-containers/internal/storage
 End-to-end smoke against a real temp workspace and temp tool home (no code changes; this proves the binary works as a whole):
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && \
-  go build -o /tmp/cg ./cmd/claude_git && \
-  export CLAUDE_GIT_HOME="$(mktemp -d)" && \
+cd /Users/angeral/Repositories/agent-containers && \
+  go build -o /tmp/cg ./cmd/acon && \
+  export ACON_HOME="$(mktemp -d)" && \
   SMOKE_WS="$(mktemp -d)" && \
   mkdir -p "$SMOKE_WS/.claude/skills/demo" && \
   printf '{"x":1}' > "$SMOKE_WS/.claude/settings.json" && \
@@ -2582,12 +2582,12 @@ cd /Users/angeral/Repositories/claude_git && \
   echo "--- workspace settings (must be untouched) ---" && cat "$SMOKE_WS/.claude/settings.json"
 ```
 
-Expected output (paths/hash vary): an `Initialized claude_git environment ...` block, a `list` line containing `_base` and `0.1.0`, a `status` block with `workspace:`/`hash:`/`repo:`/`active:    none`, and a final line `{"x":1}` proving the workspace `.claude/` was not modified (only the `.claude_git` marker was added).
+Expected output (paths/hash vary): an `Initialized acon environment ...` block, a `list` line containing `_base` and `0.1.0`, a `status` block with `workspace:`/`hash:`/`repo:`/`active:    none`, and a final line `{"x":1}` proving the workspace `.claude/` was not modified (only the `.acon` marker was added).
 
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && go build ./... && go test ./... && go vet ./...
+cd /Users/angeral/Repositories/agent-containers && go build ./... && go test ./... && go vet ./...
 ```
 
 Expected: PASS across all packages and a clean `go vet`.
@@ -2595,7 +2595,7 @@ Expected: PASS across all packages and a clean `go vet`.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/angeral/Repositories/claude_git && git add -A && git commit -m "M1: full-suite green gate; init/list/status end-to-end smoke verified" --allow-empty
+cd /Users/angeral/Repositories/agent-containers && git add -A && git commit -m "M1: full-suite green gate; init/list/status end-to-end smoke verified" --allow-empty
 ```
 
 ---
@@ -2603,7 +2603,7 @@ cd /Users/angeral/Repositories/claude_git && git add -A && git commit -m "M1: fu
 ## Milestone exit criteria (M1)
 
 - `go build ./...` and `go test ./...` are green; `go vet ./...` is clean.
-- `claude_git init` binds a workspace: creates `~/.claude_git/environments/<hash>/{env.toml,repo/}`, imports the existing `.claude/` + `CLAUDE.md` into a `_base` persona, writes the one-line `.claude_git` marker, and warns loudly (without acting) if `.claude/` is tracked by the code repo.
-- `claude_git list` shows `_base` with its version; `claude_git status` shows the active persona, workspace, hash, and repo path.
-- `GitStorageEngine` is exercised against a real temp repo (`t.TempDir()`, `CLAUDE_GIT_HOME` on temp) for objects, trees, snapshots, timeline, tags, and remote registration.
+- `acon init` binds a workspace: creates `~/.acon/environments/<hash>/{env.toml,repo/}`, imports the existing `.claude/` + `CLAUDE.md` into a `_base` persona, writes the one-line `.acon` marker, and warns loudly (without acting) if `.claude/` is tracked by the code repo.
+- `acon list` shows `_base` with its version; `acon status` shows the active persona, workspace, hash, and repo path.
+- `GitStorageEngine` is exercised against a real temp repo (`t.TempDir()`, `ACON_HOME` on temp) for objects, trees, snapshots, timeline, tags, and remote registration.
 - The workspace's own `.claude/` and `CLAUDE.md` are read at init but otherwise left byte-for-byte untouched.

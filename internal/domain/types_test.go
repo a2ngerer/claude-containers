@@ -67,5 +67,5 @@ func TestSentinelErrors(t *testing.T) {
 	require.True(t, errors.Is(ErrPersonaNotFound, ErrPersonaNotFound))
 	require.NotEqual(t, ErrPersonaNotFound.Error(), ErrNotInitialized.Error())
 	require.NotEqual(t, ErrLocked.Error(), ErrVerifyMismatch.Error())
-	require.Contains(t, ErrNotInitialized.Error(), "claude_git init")
+	require.Contains(t, ErrNotInitialized.Error(), "acon init")
 }

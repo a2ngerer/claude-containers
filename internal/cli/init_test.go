@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,7 +33,7 @@ func seedWorkspace(t *testing.T) string {
 }
 
 func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := seedWorkspace(t)
 	// EvalSymlinks is now applied inside Create/Open; resolve here too so that
 	// expected hash values match the canonical path (macOS /var -> /private/var).
@@ -45,7 +45,7 @@ func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
 	require.Contains(t, out, "Initialized")
 
 	// marker file written into the workspace, one line = hash
-	marker, err := os.ReadFile(filepath.Join(ws, ".claude_git"))
+	marker, err := os.ReadFile(filepath.Join(ws, ".acon"))
 	require.NoError(t, err)
 	require.Equal(t, environment.WorkspaceHash(filepath.Clean(wsReal)), strings.TrimSpace(string(marker)))
 
@@ -73,7 +73,7 @@ func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
 }
 
 func TestInit_NoExistingClaude(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	wsReal, err := filepath.EvalSymlinks(ws)
 	require.NoError(t, err)

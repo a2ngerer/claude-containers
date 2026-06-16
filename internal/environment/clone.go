@@ -7,13 +7,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/storage"
+	"github.com/a2ngerer/agent-containers/internal/storage"
 )
 
 // defaultGitignore is a byte-identical copy of share.DefaultGitignore(). It is
 // inlined here to avoid an import cycle (share imports environment, never the
 // reverse). TestGitignoreInSync asserts the two strings never drift apart.
-const defaultGitignore = `# claude_git persona repo — secret-safe defaults (DO NOT relax)
+const defaultGitignore = `# acon persona repo — secret-safe defaults (DO NOT relax)
 # Claude Code local layer (coder's machine-local tweaks must never be shared)
 settings.local.json
 
@@ -61,10 +61,10 @@ func writeGitignore(repoDir string) error {
 	return nil
 }
 
-// writeMarker writes the one-line <workspace>/.claude_git marker (= workspace
+// writeMarker writes the one-line <workspace>/.acon marker (= workspace
 // hash). The format matches the CLI init path so both entry points agree.
 func writeMarker(absWorkspace, hash string) error {
-	path := filepath.Join(absWorkspace, ".claude_git")
+	path := filepath.Join(absWorkspace, ".acon")
 	if err := os.WriteFile(path, []byte(hash+"\n"), 0o644); err != nil {
 		return fmt.Errorf("write workspace marker %s: %w", path, err)
 	}
@@ -74,8 +74,8 @@ func writeMarker(absWorkspace, hash string) error {
 // CloneInto onboards an existing persona repo into a NEW environment bound to
 // workspace. It initialises the git-backed store at RepoDir(hash), fetches the
 // remote's persona and tag refs, writes the secret-safe .gitignore and env.toml,
-// and drops the <workspace>/.claude_git marker. The returned environment is ready
-// for list, use, etc. Used by share.Clone and by `claude_git init --from`.
+// and drops the <workspace>/.acon marker. The returned environment is ready
+// for list, use, etc. Used by share.Clone and by `acon init --from`.
 //
 // The repo is fetched, not git-cloned: persona timelines live under
 // refs/personas/* and tags under refs/tags/*, which a default clone (refs/heads/*)

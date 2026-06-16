@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // ErrSecretsFound is returned by Push when ScanForSecrets reports suspect paths.
@@ -44,7 +44,7 @@ func Pull(e *environment.Environment, remote string) error {
 
 // Clone onboards an existing persona repo into a NEW environment bound to destWorkspace.
 // It delegates to environment.CloneInto, which initialises a bare repo at RepoDir(hash),
-// fetches from remote, writes env.toml, and sets the <workspace>/.claude_git marker.
+// fetches from remote, writes env.toml, and sets the <workspace>/.acon marker.
 // The returned environment is ready for list, use, etc. Used by the clone command and
 // by init --from.
 func Clone(remote, destWorkspace string) (*environment.Environment, error) {

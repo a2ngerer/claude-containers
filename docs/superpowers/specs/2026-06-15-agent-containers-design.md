@@ -1,6 +1,6 @@
-# claude_git — Design Specification
+# acon — Design Specification
 
-> **Working title:** `claude_git` (CLI alias `cg`)
+> **Working title:** `acon` (CLI alias `cg`)
 > **Status:** Phase 1 design — approved direction, pending user review before implementation planning
 > **Date:** 2026-06-15
 > **Author:** Alexander Angerer
@@ -10,16 +10,16 @@
 
 ## 1. Vision
 
-`claude_git` treats a Claude Code agent's entire behavioral setup — `CLAUDE.md` plus the `.claude/` directory (skills, subagents, settings, hooks, slash-commands, MCP config) — as a **versioned, swappable, shareable artifact**, managed independently of the project's source code.
+`acon` treats a Claude Code agent's entire behavioral setup — `CLAUDE.md` plus the `.claude/` directory (skills, subagents, settings, hooks, slash-commands, MCP config) — as a **versioned, swappable, shareable artifact**, managed independently of the project's source code.
 
 The mental model is a container engine for agent environments:
 
-| Container engine | claude_git |
+| Container engine | acon |
 |---|---|
 | Image (versioned, layered, content-addressed) | **Persona** — a named, versioned, layered configuration bundle |
 | Image layer / commit | **Snapshot** — an immutable point in a persona's history |
 | Tag (`name:1.2.0`, `name:latest`) | **Version tag** on a snapshot |
-| `docker run <image>` | `claude_git <persona>` — activates the environment for the next `claude` start |
+| `docker run <image>` | `acon <persona>` — activates the environment for the next `claude` start |
 | Registry (Docker Hub) | **Sharing** — push/pull persona repositories and individual personas |
 | Own layer store (not git) | **Own version model** over a pluggable, git-backed storage engine |
 
@@ -63,7 +63,7 @@ Not a thin runtime switcher (high obsolescence risk vs. native features) and not
 A persona is **not** activated by swapping the workspace `.claude/` (the literal screenshot model). Instead, activation materializes the persona into a config directory **outside** the workspace and points `CLAUDE_CONFIG_DIR` at it. Consequences:
 - The workspace `.claude/` (possibly tracked by the code repo) is **never touched** → no collision with the code git. This was verified to be a real trap: `.gitignore` does *not* untrack an already-tracked `.claude/`, and two `.git` dirs over one working tree have zero mutual awareness.
 - Multiple personas can be active at once (parallel terminals) → coexistence, which the literal branch model cannot provide.
-- The user's flow (`claude` → quit → `claude_git code_reviewer` → next `claude` start runs the new environment) is the primary, sequential UX; parallel coexistence is available but not required.
+- The user's flow (`claude` → quit → `acon code_reviewer` → next `claude` start runs the new environment) is the primary, sequential UX; parallel coexistence is available but not required.
 
 ### D3 — Versioning: own domain model, git-backed pluggable storage
 Own concepts and CLI semantics (personas, layers, snapshots, timeline, tags, capability diffs — no user-facing branches). Underneath, a **pluggable storage engine** whose default implementation uses git's content-addressed object store and git remotes, fully hidden from the user. Rationale: best everyday value for students/solo/teams (robust storage, familiar GitHub/GitLab sharing, no new server) while preserving the "our own versioning" experience and leaving the door open for a fully custom object store later, behind the same interface.
@@ -102,7 +102,7 @@ Environment (one per bound workspace)
        └── Version tags    (named pointers to snapshots: reviewer:1.2.0, reviewer:latest)
 ```
 
-- **Environment** — the binding of `claude_git` to one workspace. Identified by a hash of the absolute workspace path; the underlying persona repository is a standalone, hidden git repo (decoupled from the code repo) that can be pushed/cloned for sharing.
+- **Environment** — the binding of `acon` to one workspace. Identified by a hash of the absolute workspace path; the underlying persona repository is a standalone, hidden git repo (decoupled from the code repo) that can be pushed/cloned for sharing.
 - **Persona** — a named agent environment ("the container/image"). Defined by a manifest (§6) plus its content. Has a linear-by-default history of snapshots and version tags. Examples: `coder`, `reviewer`, `researcher`, `docs-writer`.
 - **Layer** — a reusable bundle other personas compose from. `_base` is the conventional shared foundation (global conventions, language rules, paths). Personas declare `extends`.
 - **Snapshot** — an immutable, content-addressed state of a persona at a point in time (the "commit"/"layer"). Carries parent reference(s), message, author, timestamp.
@@ -158,7 +158,7 @@ Layered, each layer with one responsibility, communicating through narrow interf
 
 ```
 +--------------------------------------------------------------+
-|  CLI  (cobra)   claude_git <persona> | new | snapshot | ...   |
+|  CLI  (cobra)   acon <persona> | new | snapshot | ...   |
 +--------------------------------------------------------------+
 |  Domain core    Persona, Layer, Snapshot, Timeline, Tag,      |
 |                 composition, capability-diff, lifecycle ops   |
@@ -205,18 +205,18 @@ The uncontaminated-reviewer flow, end to end:
 **One-time setup**
 ```
 cd ~/Repositories/my-project
-claude_git init                 # binds workspace, imports current .claude/ into _base
-claude_git new coder            # extends _base; full build skills; Write/Edit allowed
-claude_git new reviewer         # extends _base; review skills only; Write/Edit DENIED
-claude_git snapshot coder    -m "coder: full skill set, TDD agent"
-claude_git snapshot reviewer -m "reviewer: stripped, no coding skills, read-only"
+acon init                 # binds workspace, imports current .claude/ into _base
+acon new coder            # extends _base; full build skills; Write/Edit allowed
+acon new reviewer         # extends _base; review skills only; Write/Edit DENIED
+acon snapshot coder    -m "coder: full skill set, TDD agent"
+acon snapshot reviewer -m "reviewer: stripped, no coding skills, read-only"
 ```
 
 **Daily loop**
 ```
-claude_git coder                # activates coder env; (re)start claude -> builds the feature
+acon coder                # activates coder env; (re)start claude -> builds the feature
 # ... build ...
-claude_git reviewer             # activates reviewer env; restart claude
+acon reviewer             # activates reviewer env; restart claude
 # reviewer sees the SAME code, but its skill set is physically the review-only set,
 # and Write/Edit are denied -> the verdict is uncontaminated
 ```
@@ -235,7 +235,7 @@ The last row is the academically decisive one: the same agent that built the cod
 
 **Visible attestation** on activation (also written to history as `attestation.json` for audit):
 ```
-$ claude_git reviewer
+$ acon reviewer
   Persona: reviewer  (uncontaminated)   reviewer:1.2.0
   Skills:     3 review-only      [security-review, silent-failure-hunter, type-design-analyzer]
   Withheld:   7 build skills     [superpowers, writing-plans, +5]  (deliberately removed)
@@ -247,20 +247,20 @@ $ claude_git reviewer
   -> Start (or restart) Claude Code in this directory to use this environment.
 ```
 
-`claude_git verify reviewer` re-runs these checks against the materialized dir and exits non-zero on any mismatch — the isolation guarantee is *verified*, not just displayed.
+`acon verify reviewer` re-runs these checks against the materialized dir and exits non-zero on any mismatch — the isolation guarantee is *verified*, not just displayed.
 
 ---
 
 ## 9. Activation mechanism in detail
 
-What `claude_git <persona>` (alias for `claude_git use <persona>`) does:
+What `acon <persona>` (alias for `acon use <persona>`) does:
 
 ```
 1. resolve   persona (+ optional :version tag); compose with its layers (_base + diffs)
 2. lock      acquire the environment lock (records active persona + PID); warn on conflict
 3. materialize
              render the composed manifest into
-             ~/.claude_git/cache/<workspace-hash>/<persona>/         <- becomes CLAUDE_CONFIG_DIR
+             ~/.acon/cache/<workspace-hash>/<persona>/         <- becomes CLAUDE_CONFIG_DIR
              - copy only allowlisted skills/subagents
              - generate settings.json with enforcement deny/allow rules
              - generate persona-local mcp.json
@@ -279,19 +279,19 @@ What `claude_git <persona>` (alias for `claude_git use <persona>`) does:
 
 **The user never types the flag soup** — the persona encapsulates the correct, reproducible combination. This is the concrete value over native flags: the building blocks exist, but nobody assembles `CLAUDE_CONFIG_DIR` + `--setting-sources` + `--strict-mcp-config` + `--allowedTools` correctly by hand on every start.
 
-**CLI dispatch rule:** reserved subcommands (`init`, `new`, `use`, `list`/`ls`, `status`, `snapshot`, `log`, `diff`, `rollback`, `tag`, `show`, `verify`, `edit`, `rm`, `push`, `pull`, `clone`, `pull-persona`) are recognized as such; any other first argument is interpreted as a persona name (`claude_git reviewer` ≡ `claude_git use reviewer`). Unknown names produce a "did you mean" with the persona list.
+**CLI dispatch rule:** reserved subcommands (`init`, `new`, `use`, `list`/`ls`, `status`, `snapshot`, `log`, `diff`, `rollback`, `tag`, `show`, `verify`, `edit`, `rm`, `push`, `pull`, `clone`, `pull-persona`) are recognized as such; any other first argument is interpreted as a persona name (`acon reviewer` ≡ `acon use reviewer`). Unknown names produce a "did you mean" with the persona list.
 
 **Edge cases (must be handled):**
 - *Tracked `.claude/` in the code repo:* because activation never writes into the workspace, this is harmless. `init` still probes (`git ls-files --error-unmatch .claude`) and, if tracked, advises (with confirmation) on optionally untracking it — never acts on the code repo automatically.
-- *Parallel sessions, divergent personas:* allowed because each persona has its own `CLAUDE_CONFIG_DIR`. The lockfile guards concurrent `claude_git` mutations, not concurrent `claude` sessions.
-- *Activation does not affect a running session:* Claude Code reads config at start. After `claude_git <persona>`, the tool explicitly instructs the user to (re)start Claude Code.
+- *Parallel sessions, divergent personas:* allowed because each persona has its own `CLAUDE_CONFIG_DIR`. The lockfile guards concurrent `acon` mutations, not concurrent `claude` sessions.
+- *Activation does not affect a running session:* Claude Code reads config at start. After `acon <persona>`, the tool explicitly instructs the user to (re)start Claude Code.
 
 ---
 
 ## 10. On-disk layout
 
 ```
-~/.claude_git/                                  # tool home
+~/.acon/                                  # tool home
   config.toml                                   # global config (default editor, author, ...)
   environments/
     <workspace-hash>/                           # one per bound workspace
@@ -303,7 +303,7 @@ What `claude_git <persona>` (alias for `claude_git use <persona>`) does:
     <workspace-hash>/
       <persona>/                                # materialized CLAUDE_CONFIG_DIR (ephemeral, rebuildable)
 
-<workspace>/.claude_git                         # optional marker file linking workspace -> environment
+<workspace>/.acon                         # optional marker file linking workspace -> environment
                                                 # (enables team onboarding via `init --from <remote>`)
 ```
 
@@ -314,32 +314,32 @@ The workspace's own `.claude/` and `CLAUDE.md` are read at `init` (to seed `_bas
 ## 11. CLI specification
 
 **Setup**
-- `claude_git init [--from <remote>]` — bind the current workspace; seed `_base` from the existing `.claude/`, or clone an existing persona repo for team onboarding.
+- `acon init [--from <remote>]` — bind the current workspace; seed `_base` from the existing `.claude/`, or clone an existing persona repo for team onboarding.
 
 **Activation (core UX)**
-- `claude_git <persona>[:<version>]` / `claude_git use <persona>` — compose, materialize, attest, and launch (or print launch command).
-- `claude_git deactivate` — clear the active persona for this workspace.
+- `acon <persona>[:<version>]` / `acon use <persona>` — compose, materialize, attest, and launch (or print launch command).
+- `acon deactivate` — clear the active persona for this workspace.
 
 **Persona management**
-- `claude_git new <name> [--from <persona>] [--extends <layer>]`
-- `claude_git list` / `ls` — personas + active marker + current version
-- `claude_git status` — active persona, dirty state, lock holder
-- `claude_git show <persona>` — composed manifest + attestation preview
-- `claude_git edit <persona>` — open the manifest
-- `claude_git rm <persona>`
+- `acon new <name> [--from <persona>] [--extends <layer>]`
+- `acon list` / `ls` — personas + active marker + current version
+- `acon status` — active persona, dirty state, lock holder
+- `acon show <persona>` — composed manifest + attestation preview
+- `acon edit <persona>` — open the manifest
+- `acon rm <persona>`
 
 **Versioning**
-- `claude_git snapshot [<persona>] [-m <msg>]` — commit current persona state (alias: `commit`)
-- `claude_git log [<persona>]` — history/timeline
-- `claude_git diff [<a> <b>]` — **capability diff** between snapshots or personas ("coder has X, reviewer does not")
-- `claude_git rollback <persona> <snapshot|version>`
-- `claude_git tag <persona> <version>` — SemVer tag a snapshot
-- `claude_git verify <persona>` — re-check materialized isolation; non-zero on mismatch
+- `acon snapshot [<persona>] [-m <msg>]` — commit current persona state (alias: `commit`)
+- `acon log [<persona>]` — history/timeline
+- `acon diff [<a> <b>]` — **capability diff** between snapshots or personas ("coder has X, reviewer does not")
+- `acon rollback <persona> <snapshot|version>`
+- `acon tag <persona> <version>` — SemVer tag a snapshot
+- `acon verify <persona>` — re-check materialized isolation; non-zero on mismatch
 
 **Sharing**
-- `claude_git push [<remote>]` / `claude_git pull [<remote>]` — sync the persona repo (S1)
-- `claude_git clone <remote>` — clone a whole persona set
-- `claude_git pull-persona <source>#<persona>` — pull a single persona (S2, staged)
+- `acon push [<remote>]` / `acon pull [<remote>]` — sync the persona repo (S1)
+- `acon clone <remote>` — clone a whole persona set
+- `acon pull-persona <source>#<persona>` — pull a single persona (S2, staged)
 
 MVP subset is defined in §15.
 
@@ -349,7 +349,7 @@ MVP subset is defined in §15.
 
 - Resolution order: `_base` → persona diff. Later layers override scalars; skill/subagent allowlists are unions unless a layer marks `mode = "replace"`.
 - Materialization merges the composed manifest into a flat config dir; Claude Code only ever sees the finished directory, never a "diff."
-- Composition is what makes isolation auditable (D5): `claude_git diff coder reviewer` shows the capability delta directly.
+- Composition is what makes isolation auditable (D5): `acon diff coder reviewer` shows the capability delta directly.
 
 ---
 
@@ -380,10 +380,10 @@ commit = "<sha>"
 |---|---|
 | Sub-task within the same effort, shared context wanted | **native subagent** — lighter, no process boundary |
 | Live orchestration of parallel agents | **Agent Teams** — that is what they are for |
-| Contamination-freedom is the *goal*; reproducible, versioned, shareable role | **claude_git persona** |
-| "What did the reviewer config look like last week, and why did it change?" | **claude_git** (history/diff/rollback) — nothing native does this |
+| Contamination-freedom is the *goal*; reproducible, versioned, shareable role | **acon persona** |
+| "What did the reviewer config look like last week, and why did it change?" | **acon** (history/diff/rollback) — nothing native does this |
 
-`claude_git` complements native isolation; it does not compete on orchestration. Its defensible value is **persistent, versioned, auditable** config — the axis Anthropic is not building.
+`acon` complements native isolation; it does not compete on orchestration. Its defensible value is **persistent, versioned, auditable** config — the axis Anthropic is not building.
 
 ---
 
@@ -405,7 +405,7 @@ commit = "<sha>"
 ## 16. Roadmap
 
 - **Phase 2 — MVP** (§15): the working CLI for solo use.
-- **Phase 3 — Sharing & teams:** S2 persona packages; team baseline personas with auditable history ("roll back to the reviewer version we reviewed with" — the one thing the plugin marketplace cannot do); CI integration (`claude_git verify` as a gate).
+- **Phase 3 — Sharing & teams:** S2 persona packages; team baseline personas with auditable history ("roll back to the reviewer version we reviewed with" — the one thing the plugin marketplace cannot do); CI integration (`acon verify` as a gate).
 - **Phase 4 — Containers (commercializable):** optional true sandbox isolation — each persona runs in its own filesystem/process sandbox with resource limits. Builds on the existing persona model; turns the metaphor into enforced runtime isolation. This is the "sellable" stage.
 - **Optional:** native storage engine (no git dependency); editor/TUI integration; persona analytics (does the isolated reviewer measurably catch more — ties to the self-bias literature, the research-adjacent angle).
 
@@ -428,8 +428,8 @@ commit = "<sha>"
 
 1. `init` in a fresh repo seeds `_base` from existing `.claude/` without modifying the workspace.
 2. `new coder` / `new reviewer`, then `snapshot` each — both appear in `list` with versions.
-3. `claude_git reviewer` materializes a config dir outside the workspace, prints an attestation, and the workspace `.claude/` is byte-for-byte unchanged.
-4. A Claude Code session started after `claude_git reviewer` cannot invoke build skills and cannot `Write`/`Edit` (verified manually + by `verify`).
+3. `acon reviewer` materializes a config dir outside the workspace, prints an attestation, and the workspace `.claude/` is byte-for-byte unchanged.
+4. A Claude Code session started after `acon reviewer` cannot invoke build skills and cannot `Write`/`Edit` (verified manually + by `verify`).
 5. `diff coder reviewer` shows the capability delta.
 6. `rollback reviewer <older>` restores a prior persona state; `log` reflects it.
 7. `push`/`clone` round-trip the persona repo to a remote with no secrets committed.

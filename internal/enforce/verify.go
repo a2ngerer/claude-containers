@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 )
 
 // Verify asserts that destDir contains EXACTLY the artefacts a faithful

@@ -1,6 +1,6 @@
-# Compiled binary (built via `go build -o claude_git ./cmd/claude_git`)
-/claude_git
-/cmd/claude_git/claude_git
+# Compiled binary (built via `go build -o acon ./cmd/acon`)
+/acon
+/cmd/acon/acon
 *.exe
 
 # Go test / coverage artifacts

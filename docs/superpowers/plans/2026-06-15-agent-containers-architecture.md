@@ -1,4 +1,4 @@
-# claude_git — Architecture Contract (shared reference for all milestone plans)
+# acon — Architecture Contract (shared reference for all milestone plans)
 
 > **Binding for:** M1 Foundation, M2 Personas & Versioning, M3 Activation, M4 Sharing.
 > **Rule:** Plans MUST use the exact module path, package layout, type names, and signatures defined here. Do not redefine or rename. If a plan needs a new type, it adds it in the package indicated below and notes it.
@@ -8,7 +8,7 @@
 
 ## 1. Module, toolchain, dependencies
 
-- **Module path:** `github.com/a2ngerer/claude-containers` (placeholder — owner adjusts before first push; all import paths below assume it)
+- **Module path:** `github.com/a2ngerer/agent-containers` (placeholder — owner adjusts before first push; all import paths below assume it)
 - **Go:** 1.23+
 - **CLI:** `github.com/spf13/cobra` (commands) + `github.com/spf13/viper` (global config)
 - **Git plumbing:** `github.com/go-git/go-git/v5` (pure-Go; no git binary dependency for core ops)
@@ -21,9 +21,9 @@
 ## 2. Package layout (responsibility-split)
 
 ```
-claude_git/
+acon/
   go.mod
-  cmd/claude_git/main.go        # entrypoint; builds the cobra root and Execute()s it
+  cmd/acon/main.go        # entrypoint; builds the cobra root and Execute()s it
   internal/
     domain/                     # pure types + pure functions; NO I/O, NO git
       persona.go                # Persona, Config, SkillSet, SubagentSet, MCPConfig, Metadata
@@ -182,7 +182,7 @@ import "errors"
 var (
 	ErrPersonaNotFound = errors.New("persona not found")
 	ErrPersonaExists   = errors.New("persona already exists")
-	ErrNotInitialized  = errors.New("workspace not initialized (run: claude_git init)")
+	ErrNotInitialized  = errors.New("workspace not initialized (run: acon init)")
 	ErrLocked          = errors.New("environment is locked by another process")
 	ErrVerifyMismatch  = errors.New("materialized environment does not match manifest")
 	ErrLayerNotFound   = errors.New("extends layer not found")
@@ -197,7 +197,7 @@ var (
 // internal/storage/engine.go
 package storage
 
-import "github.com/a2ngerer/claude-containers/internal/domain"
+import "github.com/a2ngerer/agent-containers/internal/domain"
 
 type ObjectID string
 
@@ -242,7 +242,7 @@ func OpenGit(repoDir string) (StorageEngine, error) // implemented in git.go
 ```go
 // internal/environment/paths.go
 func WorkspaceHash(absWorkspace string) string // sha1 hex of filepath.Clean(abs)
-func ToolHome() string                         // ~/.claude_git (respects CLAUDE_GIT_HOME)
+func ToolHome() string                         // ~/.acon (respects ACON_HOME)
 func EnvDir(hash string) string                // <home>/environments/<hash>
 func RepoDir(hash string) string               // <home>/environments/<hash>/repo
 func CacheDir(hash, persona string) string     // <home>/cache/<hash>/<persona>
@@ -324,14 +324,14 @@ func DefaultGitignore() string // settings.local.json, *.key, .env, etc.
 ## 6. On-disk layout (authoritative; see spec §10)
 
 ```
-$CLAUDE_GIT_HOME (default ~/.claude_git)/
+$ACON_HOME (default ~/.acon)/
   config.toml
   environments/<workspace-hash>/
     env.toml                 # EnvConfig
     repo/                    # git repo = StorageEngine backend (hidden from user)
       personas/_base/ coder/ reviewer/    # persona.toml + CLAUDE.md + skills/ agents/ mcp.json
   cache/<workspace-hash>/<persona>/        # materialized CLAUDE_CONFIG_DIR (ephemeral)
-<workspace>/.claude_git                    # marker: one line = workspace-hash
+<workspace>/.acon                    # marker: one line = workspace-hash
 ```
 
 `env.toml`, `persona.toml` use TOML. Timestamps: RFC 3339 (`time.RFC3339`).
@@ -340,7 +340,7 @@ $CLAUDE_GIT_HOME (default ~/.claude_git)/
 
 ## 7. Conventions
 
-- **Testing:** table-driven where natural; `t.TempDir()` for filesystem tests; set `CLAUDE_GIT_HOME` to a temp dir per test to isolate the tool home. Use `require` (fail-fast), not `assert`.
+- **Testing:** table-driven where natural; `t.TempDir()` for filesystem tests; set `ACON_HOME` to a temp dir per test to isolate the tool home. Use `require` (fail-fast), not `assert`.
 - **No global state** beyond viper config; pass `*Environment` explicitly.
 - **CLI files are thin:** parse flags, call one internal function, format output. No business logic in `cli/`.
 - **Output:** human output to stdout; errors to stderr; non-zero exit on failure. `--json` flag deferred (not in MVP).
@@ -353,12 +353,12 @@ $CLAUDE_GIT_HOME (default ~/.claude_git)/
 
 Added after the milestone-plan self-review. Build the milestones **in order M1 → M2 → M3 → M4**; each compiles and its tests pass before the next starts. The following seams cross plan boundaries and are resolved here authoritatively (plans defer to this section):
 
-1. **CLI entrypoint = `cli.NewRootCmd() *cobra.Command` (M1).** `cmd/claude_git/main.go` builds it and `Execute()`s it. M2/M3/M4 attach their commands additively in the existing `root.AddCommand(...)` block inside `NewRootCmd()` — never replace it, never introduce a second root builder.
+1. **CLI entrypoint = `cli.NewRootCmd() *cobra.Command` (M1).** `cmd/acon/main.go` builds it and `Execute()`s it. M2/M3/M4 attach their commands additively in the existing `root.AddCommand(...)` block inside `NewRootCmd()` — never replace it, never introduce a second root builder.
 
 2. **Bare-arg dispatch modifies `main.go` (M3).** M3 adds `cli.DispatchArgs([]string) []string` and `cli.reservedSubcommands`. The final `main.go` form is:
    ```go
    root := cli.NewRootCmd()
-   root.SetArgs(cli.DispatchArgs(os.Args[1:])) // maps `claude_git <persona>` -> `claude_git use <persona>` for non-reserved first args
+   root.SetArgs(cli.DispatchArgs(os.Args[1:])) // maps `acon <persona>` -> `acon use <persona>` for non-reserved first args
    if err := root.Execute(); err != nil { os.Exit(1) }
    ```
    This is the one M3-owned edit to the M1 file; do it when building M3.

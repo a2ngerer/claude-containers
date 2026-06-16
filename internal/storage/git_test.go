@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 

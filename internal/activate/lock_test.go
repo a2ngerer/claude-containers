@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
 func lockEnv(t *testing.T) *environment.Environment {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("CLAUDE_GIT_HOME", home)
+	t.Setenv("ACON_HOME", home)
 	ws := t.TempDir()
 	e, err := environment.Create(ws)
 	require.NoError(t, err)

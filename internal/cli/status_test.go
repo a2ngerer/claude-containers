@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
 func TestStatus_AfterInit(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	// EvalSymlinks resolves macOS /var -> /private/var for stable hashes.
 	wsReal, err := filepath.EvalSymlinks(ws)
@@ -28,7 +28,7 @@ func TestStatus_AfterInit(t *testing.T) {
 }
 
 func TestStatus_ReflectsActivePersona(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(ws, "CLAUDE.md"), []byte("# rules\n"), 0o644))
 	_, err := runCLI(t, "init", "--workspace", ws)
@@ -44,7 +44,7 @@ func TestStatus_ReflectsActivePersona(t *testing.T) {
 }
 
 func TestStatus_NotInitialized(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	ws := t.TempDir()
 	_, err := runCLI(t, "status", "--workspace", ws)
 	require.Error(t, err)

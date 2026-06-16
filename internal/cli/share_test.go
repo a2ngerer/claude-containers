@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,7 +62,7 @@ func writeCLIPersonaSnapshot(t *testing.T, env *environment.Environment, persona
 }
 
 func TestCloneCmd_SetsUpEnvironmentForCwd(t *testing.T) {
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 
 	src := t.TempDir()
 	srcEnv, err := environment.Create(src)
@@ -95,7 +95,7 @@ func TestCloneCmd_SetsUpEnvironmentForCwd(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, snaps)
 
-	marker, readErr := os.ReadFile(filepath.Join(dst, ".claude_git"))
+	marker, readErr := os.ReadFile(filepath.Join(dst, ".acon"))
 	require.NoError(t, readErr)
 	require.Equal(t, hash+"\n", string(marker))
 }

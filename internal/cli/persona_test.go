@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,7 +37,7 @@ func TestPersonaTemplate_CoderAndReviewer(t *testing.T) {
 
 func newTestEnv(t *testing.T) *environment.Environment {
 	t.Helper()
-	t.Setenv("CLAUDE_GIT_HOME", t.TempDir())
+	t.Setenv("ACON_HOME", t.TempDir())
 	env, err := environment.Create(t.TempDir())
 	require.NoError(t, err)
 	return env

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
 )
 
 // copyPersonaScaffold builds a personaScaffold from an existing persona's
@@ -108,7 +108,7 @@ func removePersona(e *environment.Environment, name string) error {
 		return err
 	}
 	if e.ActivePersona() == name {
-		return fmt.Errorf("cannot remove %q: it is the active persona (run: claude_git deactivate)", name)
+		return fmt.Errorf("cannot remove %q: it is the active persona (run: acon deactivate)", name)
 	}
 	dir := filepath.Join(environment.RepoDir(e.Hash), "personas", name)
 	if err := os.RemoveAll(dir); err != nil {

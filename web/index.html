@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Claude Containers — Docker for your Claude Code agents</title>
+<title>Agent Containers — Docker for your Claude Code agents</title>
 <meta name="description" content="Version, swap, and share the CLAUDE.md + .claude/ config layer that shapes how your Claude Code agent thinks — as isolated, named personas. The uncontaminated reviewer is enforced, not promised." />
-<meta property="og:title" content="Claude Containers" />
+<meta property="og:title" content="Agent Containers" />
 <meta property="og:description" content="Docker for your Claude Code agents. Version, swap, and share the config layer as isolated personas." />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://claude-containers.alexanderangerer.com" />
+<meta property="og:url" content="https://agent-containers.alexanderangerer.com" />
 <meta name="theme-color" content="#0d0d0f" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0f'/%3E%3Cpath d='M9 11h14M9 16h14M9 21h9' stroke='%23d97757' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -175,13 +175,13 @@ footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
   <nav class="wrap">
     <a class="brand" href="#top">
       <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1a1a1f"/><path d="M9 11h14M9 16h14M9 21h9" stroke="#d97757" stroke-width="2.4" stroke-linecap="round"/></svg>
-      claude<b>-</b>containers
+      agent<b>-</b>containers
     </a>
     <div class="nav-links">
       <a href="#why" class="hide-sm">Why</a>
       <a href="#reviewer" class="hide-sm">Reviewer</a>
       <a href="#start" class="hide-sm">Quickstart</a>
-      <a href="https://github.com/a2ngerer/claude-containers" class="nav-cta" target="_blank" rel="noopener">GitHub →</a>
+      <a href="https://github.com/a2ngerer/agent-containers" class="nav-cta" target="_blank" rel="noopener">GitHub →</a>
     </div>
   </nav>
 </header>
@@ -193,14 +193,14 @@ footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
       <div class="tagline-kicker mono"><span class="dot"></span> Docker for your Claude Code agents</div>
       <h1>One workspace.<br /><span class="grad">Many agents.</span></h1>
       <p class="lede">Version, swap, and share the config layer that shapes how your agent thinks — <em>CLAUDE.md plus .claude/</em> — as isolated, named personas.</p>
-      <p class="sub">Skills, subagents, MCP servers and permissions live as one global blob today. Claude Containers turns them into containers you swap per task, snapshot like code, and hand to your team.</p>
+      <p class="sub">Skills, subagents, MCP servers and permissions live as one global blob today. Agent Containers turns them into containers you swap per task, snapshot like code, and hand to your team.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="#start">Get started</a>
-        <a class="btn btn-ghost" href="https://github.com/a2ngerer/claude-containers" target="_blank" rel="noopener">View on GitHub</a>
+        <a class="btn btn-ghost" href="https://github.com/a2ngerer/agent-containers" target="_blank" rel="noopener">View on GitHub</a>
       </div>
     </div>
     <div class="term" id="term" aria-hidden="true">
-      <div class="term-bar"><i></i><i></i><i></i><span>~/project — claude_git</span></div>
+      <div class="term-bar"><i></i><i></i><i></i><span>~/project — acon</span></div>
       <div class="term-body" id="termBody"></div>
     </div>
   </div>
@@ -213,7 +213,7 @@ footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
 
   <div class="stage">
     <div class="ws">your workspace &mdash; <b>.claude/ is never touched</b></div>
-    <div class="swap mono">▲ claude_git use &nbsp;swaps the active container ▲</div>
+    <div class="swap mono">▲ acon use &nbsp;swaps the active container ▲</div>
     <div class="cards">
       <div class="card is-base">
         <h3><span class="tagdot"></span>_base</h3>
@@ -234,10 +234,10 @@ footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
 <section class="block wrap" id="reviewer">
   <div class="eyebrow mono">The killer feature</div>
   <h2>An uncontaminated reviewer.</h2>
-  <p class="say">If the same agent that wrote the code also reviews it, its judgment is shaped by the very skills and habits that produced the bug. Claude Containers builds a reviewer that is <em>provably stripped</em> of the coder's powers — and then attests it.</p>
+  <p class="say">If the same agent that wrote the code also reviews it, its judgment is shaped by the very skills and habits that produced the bug. Agent Containers builds a reviewer that is <em>provably stripped</em> of the coder's powers — and then attests it.</p>
   <div class="split">
     <div class="attest">
-      <div class="d">$ claude_git verify reviewer</div>
+      <div class="d">$ acon verify reviewer</div>
       <div>&nbsp;</div>
       <div class="h">Persona: reviewer  (<span class="ok">uncontaminated</span>)</div>
       <div class="d">  Skills:   code-review, security-audit</div>
@@ -259,17 +259,17 @@ footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
 <section class="block wrap" id="start">
   <div class="eyebrow mono">Quickstart</div>
   <h2>Up and running in four commands.</h2>
-  <p class="say">Requires Go 1.26+. The CLI is named <em>claude_git</em> — git for your Claude config.</p>
+  <p class="say">Requires Go 1.26+. <em>acon</em> is the Agent Containers CLI — git for your Claude config.</p>
   <div class="steps">
     <div class="code"><button class="copy" type="button">copy</button><span class="c"># install the CLI</span>
-go install github.com/a2ngerer/claude-containers/cmd/claude_git@latest</div>
+go install github.com/a2ngerer/agent-containers/cmd/acon@latest</div>
     <div class="code"><button class="copy" type="button">copy</button><span class="c"># bind this workspace — seeds _base from your existing .claude/ + CLAUDE.md</span>
-claude_git init</div>
+acon init</div>
     <div class="code"><button class="copy" type="button">copy</button><span class="c"># scaffold specialized containers from embedded templates</span>
-claude_git new coder    <span class="p">--template</span> coder
-claude_git new reviewer <span class="p">--template</span> reviewer</div>
+acon new coder    <span class="p">--template</span> coder
+acon new reviewer <span class="p">--template</span> reviewer</div>
     <div class="code"><button class="copy" type="button">copy</button><span class="c"># swap the active agent for the task at hand</span>
-claude_git use reviewer</div>
+acon use reviewer</div>
   </div>
 </section>
 
@@ -294,12 +294,12 @@ claude_git use reviewer</div>
     <div class="foot-grid">
       <a class="brand" href="#top">
         <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1a1a1f"/><path d="M9 11h14M9 16h14M9 21h9" stroke="#d97757" stroke-width="2.4" stroke-linecap="round"/></svg>
-        claude<b>-</b>containers
+        agent<b>-</b>containers
       </a>
       <div class="foot-links">
-        <a href="https://github.com/a2ngerer/claude-containers" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/a2ngerer/claude-containers#readme" target="_blank" rel="noopener">Docs</a>
-        <a href="https://github.com/a2ngerer/claude-containers/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+        <a href="https://github.com/a2ngerer/agent-containers" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/a2ngerer/agent-containers#readme" target="_blank" rel="noopener">Docs</a>
+        <a href="https://github.com/a2ngerer/agent-containers/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
         <a href="https://alexanderangerer.com" target="_blank" rel="noopener">Author</a>
       </div>
     </div>
@@ -311,16 +311,16 @@ claude_git use reviewer</div>
 (function(){
   // hero terminal typing
   var lines=[
-    {t:"$ ",c:"claude_git use coder",cls:"cmd"},
+    {t:"$ ",c:"acon use coder",cls:"cmd"},
     {t:"",c:"Persona: coder  (build + codegen skills)",cls:"out"},
-    {t:"",c:"→ CLAUDE_CONFIG_DIR=~/.claude_git/cache/coder claude",cls:"out"},
+    {t:"",c:"→ CLAUDE_CONFIG_DIR=~/.acon/cache/coder claude",cls:"out"},
     {t:"",c:"",cls:"out"},
-    {t:"$ ",c:"claude_git use reviewer",cls:"cmd"},
+    {t:"$ ",c:"acon use reviewer",cls:"cmd"},
     {t:"",c:"Persona: reviewer  (uncontaminated)",cls:"ok"},
     {t:"",c:"  Withheld  skills [build, codegen]  (removed)",cls:"out"},
     {t:"",c:"  Denied:   Write, Edit, NotebookEdit",cls:"no"},
     {t:"",c:"",cls:"out"},
-    {t:"$ ",c:"claude_git push origin",cls:"cmd"},
+    {t:"$ ",c:"acon push origin",cls:"cmd"},
     {t:"",c:"scanning for secrets… clean. pushed 3 personas.",cls:"ok"}
   ];
   var body=document.getElementById("termBody");

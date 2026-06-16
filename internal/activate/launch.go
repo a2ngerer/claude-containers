@@ -4,13 +4,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/domain"
-	"github.com/a2ngerer/claude-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
 )
 
 // defaultSettingSources is substituted when a persona leaves SettingSrc empty.
-// Emitting "--setting-sources ''" would make Claude Code consult every source,
+// Emitting "--setting-sources ”" would make Claude Code consult every source,
 // defeating isolation; an isolated persona should consult at most the project
 // scope, so that is the safe default.
 var defaultSettingSources = []string{"project"}

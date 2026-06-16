@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/a2ngerer/claude-containers/internal/compose"
-	"github.com/a2ngerer/claude-containers/internal/enforce"
-	"github.com/a2ngerer/claude-containers/internal/environment"
-	"github.com/a2ngerer/claude-containers/internal/materialize"
+	"github.com/a2ngerer/agent-containers/internal/compose"
+	"github.com/a2ngerer/agent-containers/internal/enforce"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/materialize"
 	"github.com/spf13/cobra"
 )
 
-// newVerifyCmd builds `claude_git verify <persona>`: re-materialize the persona
+// newVerifyCmd builds `acon verify <persona>`: re-materialize the persona
 // into its cache config dir and assert isolation. Exits non-zero (RunE error) on
 // any mismatch; the error message carries the diff produced by enforce.Verify.
 func newVerifyCmd() *cobra.Command {
