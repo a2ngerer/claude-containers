@@ -43,6 +43,12 @@ func seedRepo(t *testing.T, persona string) *environment.Environment {
 	return e
 }
 
+// personaDirOf returns the persona's source tree, the first argument Materialize
+// now takes instead of the whole environment.
+func personaDirOf(e *environment.Environment, rm compose.ResolvedManifest) string {
+	return filepath.Join(environment.RepoDir(e.Hash), "personas", rm.Persona.Name)
+}
+
 func reviewerManifest() compose.ResolvedManifest {
 	return compose.ResolvedManifest{
 		Persona: domain.Persona{
@@ -67,7 +73,7 @@ func TestMaterialize_AllowlistOnly(t *testing.T) {
 	rm := reviewerManifest()
 	dest := filepath.Join(t.TempDir(), "cfg")
 
-	require.NoError(t, Materialize(e, rm, dest))
+	require.NoError(t, Materialize(personaDirOf(e, rm), rm, dest))
 
 	// allowlisted skill present
 	require.FileExists(t, filepath.Join(dest, "skills", "security-review", "SKILL.md"))
@@ -104,7 +110,7 @@ func TestMaterialize_SkillSymlinkRejected(t *testing.T) {
 	require.NoError(t, os.Symlink(secret, link))
 
 	dest := filepath.Join(t.TempDir(), "cfg")
-	err := Materialize(e, rm, dest)
+	err := Materialize(personaDirOf(e, rm), rm, dest)
 	require.Error(t, err, "symlink in persona skill must be rejected fail-closed")
 	require.Contains(t, err.Error(), "symlink not allowed")
 }
@@ -118,7 +124,7 @@ func TestMaterialize_TraversalSkillNameRejected(t *testing.T) {
 	rm.Skills = []string{"../evil"}
 
 	dest := filepath.Join(t.TempDir(), "cfg")
-	err := Materialize(e, rm, dest)
+	err := Materialize(personaDirOf(e, rm), rm, dest)
 	require.Error(t, err, "skill name escaping destDir must be rejected")
 	require.Contains(t, err.Error(), "invalid persona component name")
 }
@@ -129,7 +135,7 @@ func TestMaterialize_TraversalSubagentNameRejected(t *testing.T) {
 	rm.Subagents = []string{"../../evil"}
 
 	dest := filepath.Join(t.TempDir(), "cfg")
-	err := Materialize(e, rm, dest)
+	err := Materialize(personaDirOf(e, rm), rm, dest)
 	require.Error(t, err, "subagent name escaping destDir must be rejected")
 	require.Contains(t, err.Error(), "invalid persona component name")
 }
@@ -143,7 +149,7 @@ func TestMaterialize_ReadOnlyWritesEmptyMCP(t *testing.T) {
 	rm.MCP = domain.MCPConfig{Config: "", Strict: false} // read-only still isolates
 
 	dest := filepath.Join(t.TempDir(), "cfg")
-	require.NoError(t, Materialize(e, rm, dest))
+	require.NoError(t, Materialize(personaDirOf(e, rm), rm, dest))
 
 	got, err := os.ReadFile(filepath.Join(dest, "mcp.json"))
 	require.NoError(t, err)
@@ -159,7 +165,7 @@ func TestMaterialize_NonIsolatedHasNoMCP(t *testing.T) {
 	rm.MCP = domain.MCPConfig{Config: "", Strict: false}
 
 	dest := filepath.Join(t.TempDir(), "cfg")
-	require.NoError(t, Materialize(e, rm, dest))
+	require.NoError(t, Materialize(personaDirOf(e, rm), rm, dest))
 
 	_, err := os.Stat(filepath.Join(dest, "mcp.json"))
 	require.True(t, os.IsNotExist(err), "non-isolated persona must not get an mcp.json")
@@ -172,7 +178,7 @@ func TestMaterialize_VerifyRoundTrip(t *testing.T) {
 	e := seedRepo(t, "reviewer")
 	rm := reviewerManifest()
 	dest := filepath.Join(t.TempDir(), "cfg")
-	require.NoError(t, Materialize(e, rm, dest))
+	require.NoError(t, Materialize(personaDirOf(e, rm), rm, dest))
 
 	personaDir := filepath.Join(environment.RepoDir(e.Hash), "personas", rm.Persona.Name)
 	att, err := enforce.Verify(rm, personaDir, dest)
@@ -185,10 +191,10 @@ func TestMaterialize_Idempotent(t *testing.T) {
 	rm := reviewerManifest()
 	dest := filepath.Join(t.TempDir(), "cfg")
 
-	require.NoError(t, Materialize(e, rm, dest))
+	require.NoError(t, Materialize(personaDirOf(e, rm), rm, dest))
 	first := snapshotDir(t, dest)
 
-	require.NoError(t, Materialize(e, rm, dest))
+	require.NoError(t, Materialize(personaDirOf(e, rm), rm, dest))
 	second := snapshotDir(t, dest)
 
 	require.Equal(t, first, second, "second materialize must be byte-identical")

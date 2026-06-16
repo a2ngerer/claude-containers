@@ -34,7 +34,9 @@ func EnvDir(hash string) string { return filepath.Join(ToolHome(), "environments
 // RepoDir is the hidden git repo (StorageEngine backend) for an environment.
 func RepoDir(hash string) string { return filepath.Join(EnvDir(hash), "repo") }
 
-// CacheDir is the materialized CLAUDE_CONFIG_DIR for one persona (ephemeral).
-func CacheDir(hash, persona string) string {
-	return filepath.Join(ToolHome(), "cache", hash, persona)
+// CacheDir is the materialized config dir for one persona under one harness
+// (ephemeral). It is namespaced by harness so the same persona can be
+// materialized for several harnesses without clobbering.
+func CacheDir(hash, harnessID, persona string) string {
+	return filepath.Join(ToolHome(), "cache", hash, harnessID, persona)
 }

@@ -54,8 +54,9 @@ func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
 	baseDir := filepath.Join(environment.RepoDir(hash), "personas", "_base")
 	require.FileExists(t, filepath.Join(baseDir, "persona.toml"))
 	require.FileExists(t, filepath.Join(baseDir, "CLAUDE.md"))
-	require.FileExists(t, filepath.Join(baseDir, ".claude", "settings.json"))
-	require.FileExists(t, filepath.Join(baseDir, ".claude", "skills", "demo", "SKILL.md"))
+	// skills are materialized into the persona store and enumerated, so _base is a
+	// full, exportable persona rather than a dead .claude/ copy.
+	require.FileExists(t, filepath.Join(baseDir, "skills", "demo", "SKILL.md"))
 
 	// _base appears via the environment API
 	env, err := environment.Open(ws)
@@ -65,6 +66,8 @@ func TestInit_BindsWorkspaceAndImportsBase(t *testing.T) {
 	require.Len(t, personas, 1)
 	require.Equal(t, "_base", personas[0].Name)
 	require.True(t, personas[0].IsLayer())
+	require.Contains(t, personas[0].Config.Skills.Include, "demo",
+		"_base must enumerate the imported skill so it materializes and exports")
 
 	// workspace .claude/ left untouched (still exactly what we seeded)
 	orig, err := os.ReadFile(filepath.Join(ws, ".claude", "settings.json"))

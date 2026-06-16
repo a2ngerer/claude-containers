@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Agent Containers — Docker for your Claude Code agents</title>
-<meta name="description" content="Version, swap, and share the CLAUDE.md + .claude/ config layer that shapes how your Claude Code agent thinks — as isolated, named personas. The uncontaminated reviewer is enforced, not promised." />
+<title>Agent Containers — Docker for your coding agents</title>
+<meta name="description" content="Version, swap, and share the CLAUDE.md + .claude/ config layer as isolated, named personas — then export any persona to OpenCode, Codex, Gemini, Kimi, or Antigravity with one command. The uncontaminated reviewer is enforced, not promised." />
 <meta property="og:title" content="Agent Containers" />
-<meta property="og:description" content="Docker for your Claude Code agents. Version, swap, and share the config layer as isolated personas." />
+<meta property="og:description" content="Docker for your coding agents. Version, swap, and share the config layer as isolated personas — and port them across harnesses." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://agent-containers.alexanderangerer.com" />
 <meta name="theme-color" content="#0d0d0f" />
@@ -83,21 +83,13 @@ h1 .grad{background:linear-gradient(120deg,var(--accent-bright),var(--accent) 55
 .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(2rem,5vw,4rem);align-items:center}
 @media(max-width:860px){.hero-grid{grid-template-columns:1fr}}
 
-/* terminal */
-.term{background:linear-gradient(180deg,var(--surface),var(--bg-soft));border:1px solid var(--line);
-  border-radius:var(--radius);overflow:hidden;box-shadow:0 30px 80px -40px rgba(0,0,0,.8);font-family:var(--mono)}
-.term-bar{display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;border-bottom:1px solid var(--line-soft);background:rgba(0,0,0,.2)}
-.term-bar i{width:11px;height:11px;border-radius:50%;background:#3a3a40;display:block}
-.term-bar i:nth-child(1){background:#e0796b}.term-bar i:nth-child(2){background:#d9b97f}.term-bar i:nth-child(3){background:#86c79a}
-.term-bar span{margin-left:.6rem;color:var(--faint);font-size:.7rem;letter-spacing:.06em}
-.term-body{padding:1.1rem 1.2rem;font-size:.82rem;line-height:1.75;min-height:300px}
-.term-body .ln{white-space:pre-wrap;word-break:break-word}
-.term-body .pr{color:var(--accent)}
-.term-body .cmd{color:var(--text)}
-.term-body .out{color:var(--dim)}
-.term-body .ok{color:var(--green)}
-.term-body .no{color:var(--red)}
-.term-body .cur{display:inline-block;width:8px;height:1.05em;background:var(--accent);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+/* 3d scene — floating persona containers (three.js) */
+.scene{position:relative;width:100%;aspect-ratio:1/1;max-height:520px;min-height:340px}
+.scene canvas{display:block;width:100%;height:100%;outline:none;cursor:grab;touch-action:pan-y}
+.scene canvas:active{cursor:grabbing}
+.scene::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(72% 72% at 50% 45%,transparent 72%,rgba(13,13,15,.75) 100%)}
+@media(max-width:860px){.scene{max-height:400px;min-height:300px}}
 
 /* sections */
 section.block{padding-block:clamp(3.5rem,8vh,6rem);border-top:1px solid var(--line-soft)}
@@ -156,6 +148,17 @@ h2 + .say{margin-top:1rem;color:var(--dim);max-width:60ch}
 .cmd-cell code{font-family:var(--mono);color:var(--accent);font-size:.78rem;font-weight:600}
 .cmd-cell p{margin-top:.35rem;color:var(--dim);font-size:.85rem;line-height:1.45}
 
+/* harnesses */
+.harness-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem;margin-top:1.8rem}
+.hcell{border:1px solid var(--line);border-radius:10px;padding:.85rem .9rem;background:var(--surface);transition:border-color .2s,transform .2s}
+.hcell:hover{border-color:var(--accent);transform:translateY(-2px)}
+.hcell .hn{font-family:var(--mono);font-size:.82rem;color:var(--text);font-weight:600;display:flex;align-items:center;gap:.45rem}
+.hcell.src{border-color:rgba(217,119,87,.4)}
+.hcell.src .hn{color:var(--accent)}
+.hcell .hd{margin-top:.4rem;font-family:var(--mono);font-size:.64rem;letter-spacing:.02em;color:var(--dim)}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex:none}
+.hcell.src .hdot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+
 /* footer */
 footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
 .foot-grid{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1.5rem;align-items:center}
@@ -180,6 +183,7 @@ footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
     <div class="nav-links">
       <a href="#why" class="hide-sm">Why</a>
       <a href="#reviewer" class="hide-sm">Reviewer</a>
+      <a href="#portable" class="hide-sm">Portable</a>
       <a href="#start" class="hide-sm">Quickstart</a>
       <a href="https://github.com/a2ngerer/agent-containers" class="nav-cta" target="_blank" rel="noopener">GitHub →</a>
     </div>
@@ -190,18 +194,17 @@ footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
 <section class="hero wrap">
   <div class="hero-grid">
     <div>
-      <div class="tagline-kicker mono"><span class="dot"></span> Docker for your Claude Code agents</div>
-      <h1>One workspace.<br /><span class="grad">Many agents.</span></h1>
+      <div class="tagline-kicker mono"><span class="dot"></span> Docker for your coding agents</div>
+      <h1>One workspace.<br /><span class="grad">Any agent. Any harness.</span></h1>
       <p class="lede">Version, swap, and share the config layer that shapes how your agent thinks — <em>CLAUDE.md plus .claude/</em> — as isolated, named personas.</p>
-      <p class="sub">Skills, subagents, MCP servers and permissions live as one global blob today. Agent Containers turns them into containers you swap per task, snapshot like code, and hand to your team.</p>
+      <p class="sub">Skills, subagents, MCP servers and permissions live as one global blob today, locked to one harness. Agent Containers turns them into containers you swap per task, snapshot like code, hand to your team — and <em style="font-style:normal;color:var(--accent)">export to OpenCode, Codex, Gemini, Kimi or Antigravity</em> with one command.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="#start">Get started</a>
         <a class="btn btn-ghost" href="https://github.com/a2ngerer/agent-containers" target="_blank" rel="noopener">View on GitHub</a>
       </div>
     </div>
-    <div class="term" id="term" aria-hidden="true">
-      <div class="term-bar"><i></i><i></i><i></i><span>~/project — acon</span></div>
-      <div class="term-body" id="termBody"></div>
+    <div class="scene" aria-hidden="true">
+      <canvas id="webgl"></canvas>
     </div>
   </div>
 </section>
@@ -256,10 +259,45 @@ footer{border-top:1px solid var(--line);padding-block:3rem;margin-top:2rem}
   </div>
 </section>
 
+<section class="block wrap" id="portable">
+  <div class="eyebrow mono">The killer feature · part two</div>
+  <h2>Author once. Run on any harness.</h2>
+  <p class="say">You tuned your setup in Claude Code. Now you want to try OpenCode — or a teammate runs Codex, or CI uses Gemini. <em>Containerize your Claude setup and take it with you.</em> One command renders a persona into the target's own config layout and prints an honest report of what crossed the boundary intact and what was lost.</p>
+  <div class="split">
+    <div class="attest">
+      <div class="d">$ acon export coder --harness opencode</div>
+      <div>&nbsp;</div>
+      <div class="h">Persona: coder  (<span class="ok">translated → opencode</span>)</div>
+      <div class="d">  instructions  AGENTS.md</div>
+      <div class="d">  skills        5 → skills/  <span class="ok">ok</span></div>
+      <div class="d">  subagents     2 → agent/*.md  <span style="color:var(--blue)">~translated</span></div>
+      <div class="d">  mcp           "mcp" object (3)  <span style="color:var(--blue)">~translated</span></div>
+      <div class="d">  permissions   allow/deny → permission map</div>
+      <div class="d">  dropped  <span class="no">sandbox nuance</span></div>
+    </div>
+    <div>
+      <ul class="feat-points">
+        <li><span class="ic">→</span><div><b>Claude is the source.</b> Every other harness is an export target. Your <span class="mono" style="text-transform:none;color:var(--accent)">.claude/</span> stays the single source of truth.</div></li>
+        <li><span class="ic">≈</span><div><b>Honest about loss.</b> Each artifact is marked <span class="mono" style="text-transform:none">ok</span>, <span class="mono" style="text-transform:none">~translated</span>, or <span class="mono" style="text-transform:none">dropped</span> — never a silent lossy conversion.</div></li>
+        <li><span class="ic">▼</span><div><b>Withholding travels.</b> A withheld skill is physically absent in OpenCode, Codex and Gemini too — not just Claude.</div></li>
+      </ul>
+    </div>
+  </div>
+  <div class="harness-grid">
+    <div class="hcell src"><div class="hn"><span class="hdot"></span>Claude Code</div><div class="hd">source · CLAUDE_CONFIG_DIR</div></div>
+    <div class="hcell"><div class="hn"><span class="hdot"></span>OpenCode</div><div class="hd">OPENCODE_CONFIG_DIR</div></div>
+    <div class="hcell"><div class="hn"><span class="hdot"></span>Codex</div><div class="hd">CODEX_HOME</div></div>
+    <div class="hcell"><div class="hn"><span class="hdot"></span>Gemini CLI</div><div class="hd">GEMINI_CLI_HOME</div></div>
+    <div class="hcell"><div class="hn"><span class="hdot"></span>Kimi Code</div><div class="hd">KIMI_CODE_HOME</div></div>
+    <div class="hcell"><div class="hn"><span class="hdot"></span>Antigravity</div><div class="hd">file placement</div></div>
+    <div class="hcell"><div class="hn"><span class="hdot"></span>AGENTS.md</div><div class="hd">the open standard</div></div>
+  </div>
+</section>
+
 <section class="block wrap" id="start">
   <div class="eyebrow mono">Quickstart</div>
   <h2>Up and running in four commands.</h2>
-  <p class="say">Requires Go 1.26+. <em>acon</em> is the Agent Containers CLI — git for your Claude config.</p>
+  <p class="say">Requires Go 1.25+. <em>acon</em> is the Agent Containers CLI — git for your agent config.</p>
   <div class="steps">
     <div class="code"><button class="copy" type="button">copy</button><span class="c"># install the CLI</span>
 go install github.com/a2ngerer/agent-containers/cmd/acon@latest</div>
@@ -270,6 +308,8 @@ acon new coder    <span class="p">--template</span> coder
 acon new reviewer <span class="p">--template</span> reviewer</div>
     <div class="code"><button class="copy" type="button">copy</button><span class="c"># swap the active agent for the task at hand</span>
 acon use reviewer</div>
+    <div class="code"><button class="copy" type="button">copy</button><span class="c"># containerize your setup and take it to another harness</span>
+acon export coder <span class="p">--harness</span> opencode</div>
   </div>
 </section>
 
@@ -277,14 +317,16 @@ acon use reviewer</div>
   <div class="eyebrow mono">Command reference</div>
   <h2>Everything is one verb away.</h2>
   <div class="cmd-grid">
-    <div class="cmd-cell"><code>init [--from]</code><p>Bind the workspace; seed _base or clone a shared repo.</p></div>
+    <div class="cmd-cell"><code>init [--from]</code><p>Bind the workspace; seed _base or clone a shared repo. Auto-detects your harnesses.</p></div>
     <div class="cmd-cell"><code>new --template</code><p>Scaffold a persona from coder / reviewer templates.</p></div>
-    <div class="cmd-cell"><code>use / deactivate</code><p>Activate a persona, or clear the active one.</p></div>
-    <div class="cmd-cell"><code>snapshot</code><p>Record an immutable snapshot of a persona.</p></div>
-    <div class="cmd-cell"><code>log / diff</code><p>History, and the capability delta between two personas.</p></div>
+    <div class="cmd-cell"><code>use [--harness]</code><p>Activate a persona for this workspace, on any harness.</p></div>
+    <div class="cmd-cell"><code>export --harness</code><p>Materialize a persona's config for another harness.</p></div>
+    <div class="cmd-cell"><code>harnesses</code><p>List supported harnesses and which are installed.</p></div>
+    <div class="cmd-cell"><code>config harness</code><p>Get or set the workspace's default target harness.</p></div>
+    <div class="cmd-cell"><code>snapshot / log / diff</code><p>Snapshot, history, and the capability delta between personas.</p></div>
     <div class="cmd-cell"><code>tag / rollback</code><p>SemVer-tag a snapshot, or restore a prior state.</p></div>
     <div class="cmd-cell"><code>push / pull / clone</code><p>Share over git — secret-scanned before every push.</p></div>
-    <div class="cmd-cell"><code>verify</code><p>Re-attest the materialized env matches the manifest.</p></div>
+    <div class="cmd-cell"><code>verify</code><p>Re-attest the materialized Claude env matches the manifest.</p></div>
   </div>
 </section>
 </main>
@@ -307,70 +349,143 @@ acon use reviewer</div>
   </div>
 </footer>
 
-<script>
-(function(){
-  // hero terminal typing
-  var lines=[
-    {t:"$ ",c:"acon use coder",cls:"cmd"},
-    {t:"",c:"Persona: coder  (build + codegen skills)",cls:"out"},
-    {t:"",c:"→ CLAUDE_CONFIG_DIR=~/.acon/cache/coder claude",cls:"out"},
-    {t:"",c:"",cls:"out"},
-    {t:"$ ",c:"acon use reviewer",cls:"cmd"},
-    {t:"",c:"Persona: reviewer  (uncontaminated)",cls:"ok"},
-    {t:"",c:"  Withheld  skills [build, codegen]  (removed)",cls:"out"},
-    {t:"",c:"  Denied:   Write, Edit, NotebookEdit",cls:"no"},
-    {t:"",c:"",cls:"out"},
-    {t:"$ ",c:"acon push origin",cls:"cmd"},
-    {t:"",c:"scanning for secrets… clean. pushed 3 personas.",cls:"ok"}
-  ];
-  var body=document.getElementById("termBody");
-  if(!body) return;
-  var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-  function renderAll(){
-    body.innerHTML="";
-    lines.forEach(function(l){
-      var d=document.createElement("div");d.className="ln";
-      d.innerHTML='<span class="pr">'+l.t+'</span><span class="'+l.cls+'">'+esc(l.c)+'</span>';
-      body.appendChild(d);
-    });
-  }
-  if(reduce){renderAll();return;}
-  var li=0;
-  function typeLine(){
-    if(li>=lines.length){
-      var c=document.createElement("span");c.className="cur";body.appendChild(c);return;
-    }
-    var l=lines[li];
-    var d=document.createElement("div");d.className="ln";
-    var pr='<span class="pr">'+l.t+'</span>';
-    var span=document.createElement("span");span.className=l.cls;
-    d.innerHTML=pr;d.appendChild(span);body.appendChild(d);
-    var i=0,txt=l.c;
-    if(txt===""){li++;setTimeout(typeLine,160);return;}
-    (function ch(){
-      span.textContent=txt.slice(0,i);
-      i++;
-      if(i<=txt.length){setTimeout(ch, l.cls==="cmd"?34:8);}
-      else{li++;setTimeout(typeLine, l.cls==="cmd"?420:120);}
-    })();
-  }
-  body.scrollTop=0;
-  setTimeout(typeLine,500);
+<!-- Hero scene: a quiet cluster of "persona containers" rendered with three.js.
+     The metaphor — the _base / coder / reviewer cards from the page, in 3D, with
+     one container slowly lifting out (the `acon use` swap). Subtle by design;
+     it degrades to a single static frame under prefers-reduced-motion and to the
+     CSS atmosphere alone when WebGL or the module is unavailable. -->
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
 
-  // copy buttons
-  document.querySelectorAll(".copy").forEach(function(btn){
-    btn.addEventListener("click",function(){
-      var code=btn.parentElement.cloneNode(true);
-      var b=code.querySelector(".copy"); if(b) b.remove();
-      var text=code.textContent.replace(/\n+$/,"");
-      navigator.clipboard.writeText(text).then(function(){
-        btn.textContent="copied";btn.classList.add("done");
-        setTimeout(function(){btn.textContent="copy";btn.classList.remove("done");},1400);
-      });
+const canvas = document.getElementById('webgl');
+const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+} catch (_) {
+  // No WebGL — the CSS atmosphere carries the hero, nothing else to do.
+}
+
+if (renderer) {
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0d0d0f, 0.085);
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+  camera.position.set(0, 0, 13);
+
+  // Palette mirrors the persona cards: dim baseline, blue coder, accent reviewer.
+  const ACCENT = 0xd97757, BRIGHT = 0xff9268, BLUE = 0x7fa6d9, GREEN = 0x86c79a, DIM = 0x6a6a73;
+  const box = new THREE.BoxGeometry(1, 1, 1);
+  const edges = new THREE.EdgesGeometry(box);
+
+  const group = new THREE.Group();
+  scene.add(group);
+  const cubes = [];
+
+  function container(size, color, pos, faint) {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: faint ? 0.02 : 0.07 })));
+    g.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color, transparent: true, opacity: faint ? 0.34 : 0.96 })));
+    if (!faint) {
+      // a faint, slightly larger additive wireframe fakes a soft glow without bloom
+      const halo = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending }));
+      halo.scale.setScalar(1.07);
+      g.add(halo);
+    }
+    g.scale.setScalar(size);
+    g.position.copy(pos);
+    group.add(g);
+    cubes.push({ g, base: pos.clone(), phase: Math.random() * Math.PI * 2, spin: (Math.random() - 0.5) * 0.4 });
+  }
+
+  // _base | coder | reviewer up front, a few smaller containers behind for depth.
+  [
+    { s: 2.2, c: DIM,    p: [-3.4, 0.2, -1.0], faint: true },
+    { s: 1.9, c: BLUE,   p: [0.1, 0.9, 0.6] },
+    { s: 1.7, c: ACCENT, p: [3.2, -0.3, -0.4] },
+    { s: 0.9, c: BRIGHT, p: [-1.6, -2.0, 1.2] },
+    { s: 0.7, c: GREEN,  p: [2.0, 2.1, 1.0] },
+    { s: 0.6, c: DIM,    p: [-3.8, 2.3, 0.4], faint: true },
+    { s: 0.8, c: ACCENT, p: [4.0, 1.6, -1.4] },
+    { s: 0.5, c: BLUE,   p: [0.6, -2.4, -1.2] },
+    { s: 0.55, c: DIM,   p: [-0.8, 2.6, -1.6], faint: true },
+  ].forEach((o) => container(o.s, o.c, new THREE.Vector3(o.p[0], o.p[1], o.p[2]), o.faint));
+
+  const swap = cubes[2]; // the accent "reviewer" — the one that lifts out
+
+  const pointer = { x: 0, y: 0 }, target = { x: 0, y: 0 };
+  window.addEventListener('pointermove', (e) => {
+    const r = canvas.getBoundingClientRect();
+    target.x = ((e.clientX - r.left) / r.width - 0.5) * 2;
+    target.y = ((e.clientY - r.top) / r.height - 0.5) * 2;
+  }, { passive: true });
+
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function render(t) {
+    pointer.x += (target.x - pointer.x) * 0.04;
+    pointer.y += (target.y - pointer.y) * 0.04;
+    group.rotation.y = t * 0.12 + pointer.x * 0.5;
+    group.rotation.x = Math.sin(t * 0.18) * 0.08 - pointer.y * 0.35;
+    for (const c of cubes) {
+      c.g.position.y = c.base.y + Math.sin(t * 0.6 + c.phase) * 0.18;
+      c.g.rotation.y += c.spin * 0.01;
+    }
+    swap.g.position.y = swap.base.y + Math.sin(t * 0.6 + swap.phase) * 0.18 + Math.max(0, Math.sin(t * 0.5)) * 0.9;
+    renderer.render(scene, camera);
+  }
+
+  // Accumulate time only while running, so pausing offscreen never causes a jump.
+  let running = false, raf = 0, last = 0, elapsed = 0;
+  function tick(now) {
+    if (!running) return;
+    now *= 0.001;
+    elapsed += last ? Math.min(now - last, 0.05) : 0;
+    last = now;
+    render(elapsed);
+    raf = requestAnimationFrame(tick);
+  }
+  function start() { if (running) return; running = true; last = 0; raf = requestAnimationFrame(tick); }
+  function stop() { running = false; cancelAnimationFrame(raf); }
+
+  if (reduce) {
+    render(2.1); // one composed static frame
+  } else {
+    new IntersectionObserver(
+      (es) => es.forEach((e) => (e.isIntersecting ? start() : stop())),
+      { threshold: 0.05 }
+    ).observe(canvas);
+    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+  }
+}
+</script>
+<script>
+// Copy buttons on the quickstart snippets.
+document.querySelectorAll(".copy").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    var code = btn.parentElement.cloneNode(true);
+    var b = code.querySelector(".copy"); if (b) b.remove();
+    var text = code.textContent.replace(/\n+$/, "");
+    navigator.clipboard.writeText(text).then(function () {
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(function () { btn.textContent = "copy"; btn.classList.remove("done"); }, 1400);
     });
   });
-})();
+});
 </script>
 </body>
 </html>
