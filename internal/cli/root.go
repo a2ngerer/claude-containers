@@ -29,8 +29,8 @@ func openCWD() (*environment.Environment, error) {
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "acon",
-		Short:         "Version control and isolated, swappable environments for the Claude Code config layer",
-		Long:          "acon treats CLAUDE.md plus the .claude/ directory as a versioned, swappable, shareable persona — \"Docker for Claude agent environments.\"",
+		Short:         "Version, swap, share, and port the agent config layer across harnesses",
+		Long:          "acon treats CLAUDE.md plus the .claude/ directory as a versioned, swappable, shareable persona — \"Docker for your agents\" — and exports it to other harnesses (OpenCode, Codex, Gemini, Kimi, Antigravity).",
 		SilenceUsage:  true,
 		SilenceErrors: false,
 	}
@@ -64,6 +64,9 @@ func NewRootCmd() *cobra.Command {
 
 	// M4 sharing commands
 	root.AddCommand(newPushCmd(), newPullCmd(), newCloneCmd())
+
+	// M5 multi-harness commands
+	root.AddCommand(newConfigCmd(), newExportCmd(), newHarnessesCmd())
 
 	return root
 }

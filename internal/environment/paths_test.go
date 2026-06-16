@@ -42,5 +42,5 @@ func TestDerivedPaths(t *testing.T) {
 	hash := "abc123"
 	require.Equal(t, filepath.Join("/tmp/cg", "environments", hash), EnvDir(hash))
 	require.Equal(t, filepath.Join("/tmp/cg", "environments", hash, "repo"), RepoDir(hash))
-	require.Equal(t, filepath.Join("/tmp/cg", "cache", hash, "reviewer"), CacheDir(hash, "reviewer"))
+	require.Equal(t, filepath.Join("/tmp/cg", "cache", hash, "claude", "reviewer"), CacheDir(hash, "claude", "reviewer"))
 }

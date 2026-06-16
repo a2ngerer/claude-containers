@@ -8,7 +8,8 @@ import (
 	"syscall"
 
 	"github.com/a2ngerer/agent-containers/internal/activate"
-	"github.com/a2ngerer/agent-containers/internal/domain"
+	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/harness"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,7 @@ var reservedSubcommands = map[string]bool{
 	"diff": true, "rollback": true, "tag": true, "show": true,
 	"verify": true, "edit": true, "rm": true, "deactivate": true,
 	"push": true, "pull": true, "clone": true, "pull-persona": true,
+	"config": true, "export": true, "harnesses": true,
 	"help": true, "completion": true,
 }
 
@@ -41,10 +43,29 @@ func DispatchArgs(args []string) []string {
 	return append([]string{"use"}, args...)
 }
 
-// newUseCmd builds `acon use <persona>`: compose, materialize, attest, and
-// either print the launch command (default) or exec claude directly (--exec).
+// resolveHarness picks the target harness: an explicit flag wins, else the
+// workspace default, else the reference harness. It validates the id against the
+// registry so an unknown harness fails fast with the list of known ids.
+func resolveHarness(e *environment.Environment, flagVal string) (string, error) {
+	id := flagVal
+	if id == "" {
+		id = e.DefaultHarness()
+	}
+	if id == "" {
+		id = harness.Default
+	}
+	if _, ok := harness.Get(id); !ok {
+		return "", fmt.Errorf("unknown harness %q (known: %s)", id, strings.Join(harness.IDs(), ", "))
+	}
+	return id, nil
+}
+
+// newUseCmd builds `acon use <persona> [--harness id]`: compose, materialize for
+// the target harness, report, and either print the launch command (default) or
+// exec the harness directly (--exec).
 func newUseCmd() *cobra.Command {
 	var execDirect bool
+	var harnessFlag string
 	cmd := &cobra.Command{
 		Use:   "use <persona>",
 		Short: "Activate a persona for this workspace",
@@ -54,11 +75,15 @@ func newUseCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			res, err := activate.Activate(e, args[0])
+			harnessID, err := resolveHarness(e, harnessFlag)
 			if err != nil {
 				return err
 			}
-			printAttestation(cmd, res.Attestation)
+			res, err := activate.Activate(e, args[0], harnessID)
+			if err != nil {
+				return err
+			}
+			printReport(cmd, res.Report)
 			if execDirect {
 				return execLaunch(res.Launch)
 			}
@@ -66,7 +91,8 @@ func newUseCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().BoolVar(&execDirect, "exec", false, "exec claude directly instead of printing the command")
+	cmd.Flags().BoolVar(&execDirect, "exec", false, "exec the harness directly instead of printing the command")
+	cmd.Flags().StringVar(&harnessFlag, "harness", "", "target harness (default: workspace default, else claude)")
 	return cmd
 }
 
@@ -90,41 +116,67 @@ func newDeactivateCmd() *cobra.Command {
 	}
 }
 
-// printAttestation renders the human-readable cleanliness certificate.
-func printAttestation(cmd *cobra.Command, att domain.Attestation) {
+// printReport renders the unified translation/attestation certificate. For the
+// Claude target it reads as the drift-verified "uncontaminated" attestation; for
+// export targets it reads as an honest translation record with degraded/dropped
+// artifacts called out explicitly.
+func printReport(cmd *cobra.Command, r harness.Report) {
 	out := cmd.OutOrStdout()
-	clean := "uncontaminated"
-	if !att.Clean {
-		clean = "UNVERIFIED"
+	state := "translated"
+	if r.Verified {
+		state = "uncontaminated"
 	}
-	fmt.Fprintf(out, "Persona: %s  (%s)   %s:%s\n", att.Persona, clean, att.Persona, att.Version)
-	for _, line := range att.Included {
-		fmt.Fprintf(out, "  %-9s %s\n", line.Kind+":", strings.Join(line.Names, ", "))
+	fmt.Fprintf(out, "Persona: %s  (%s → %s)   %s:%s\n", r.Persona, state, r.Harness, r.Persona, r.Version)
+	for _, line := range r.Lines {
+		marker := ""
+		switch line.Status {
+		case harness.StatusTranslated:
+			marker = "  ~translated"
+		case harness.StatusDegraded:
+			marker = "  !degraded"
+		}
+		fmt.Fprintf(out, "  %-13s %s%s\n", line.Kind+":", line.Detail, marker)
 	}
-	for _, line := range att.Withheld {
-		fmt.Fprintf(out, "  Withheld  %s [%s]  (deliberately removed)\n", line.Kind, strings.Join(line.Names, ", "))
+	if len(r.Withheld) > 0 {
+		fmt.Fprintf(out, "  Withheld  skills [%s]  (deliberately removed)\n", strings.Join(r.Withheld, ", "))
 	}
-	if len(att.Denied) > 0 {
-		fmt.Fprintf(out, "  Denied:   %s\n", strings.Join(att.Denied, ", "))
+	if len(r.Denied) > 0 {
+		fmt.Fprintf(out, "  Denied:   %s\n", strings.Join(r.Denied, ", "))
 	}
-	if len(att.SettingSrc) > 0 {
-		fmt.Fprintf(out, "  Settings: %s\n", strings.Join(att.SettingSrc, "+"))
+	if len(r.Settings) > 0 {
+		fmt.Fprintf(out, "  Settings: %s\n", strings.Join(r.Settings, "+"))
+	}
+	for _, d := range r.Dropped {
+		fmt.Fprintf(out, "  dropped   %s: %s\n", d.Kind, d.Reason)
 	}
 }
 
-// printLaunchHint prints the env + command the user runs to start claude.
-func printLaunchHint(cmd *cobra.Command, spec activate.LaunchSpec) {
+// printLaunchHint prints the env + command the user runs to start the harness,
+// or, for a convention-only target with no binary, its placement note.
+func printLaunchHint(cmd *cobra.Command, spec harness.LaunchSpec) {
 	out := cmd.OutOrStdout()
-	fmt.Fprintln(out, "\nTo use this environment, start (or restart) Claude Code with:")
+	if len(spec.Argv) == 0 {
+		if spec.Note != "" {
+			fmt.Fprintf(out, "\n%s\n", spec.Note)
+		}
+		return
+	}
+	fmt.Fprintln(out, "\nTo use this environment, start (or restart) the harness with:")
 	fmt.Fprintf(out, "  %s %s\n", strings.Join(spec.Env, " "), strings.Join(spec.Argv, " "))
-	fmt.Fprintln(out, "-> Start (or restart) Claude Code in this directory to use this environment.")
+	if spec.Note != "" {
+		fmt.Fprintf(out, "Note: %s\n", spec.Note)
+	}
 }
 
-// execLaunch replaces the current process with claude (--exec path).
-func execLaunch(spec activate.LaunchSpec) error {
-	path, err := exec.LookPath("claude")
+// execLaunch replaces the current process with the harness binary (--exec path).
+func execLaunch(spec harness.LaunchSpec) error {
+	if len(spec.Argv) == 0 {
+		return fmt.Errorf("this target is not directly launchable: %s", spec.Note)
+	}
+	bin := spec.Argv[0]
+	path, err := exec.LookPath(bin)
 	if err != nil {
-		return fmt.Errorf("claude not found on PATH: %w", err)
+		return fmt.Errorf("%s not found on PATH: %w", bin, err)
 	}
 	env := mergeEnv(os.Environ(), spec.Env)
 	return syscall.Exec(path, spec.Argv, env)

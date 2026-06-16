@@ -6,9 +6,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/harness"
 	"github.com/a2ngerer/agent-containers/internal/probe"
 	"github.com/a2ngerer/agent-containers/internal/share"
 	"github.com/spf13/cobra"
@@ -90,6 +93,13 @@ func runInit(out io.Writer, workspace string) error {
 	fmt.Fprintf(out, "  hash:   %s\n", env.Hash)
 	fmt.Fprintf(out, "  base:   _base persona seeded from existing .claude/ and CLAUDE.md\n")
 
+	// Auto-detect installed harnesses and seed the workspace default so `acon use`
+	// targets the right one without a flag. The persona source stays Claude's
+	// .claude/ + CLAUDE.md; the default only controls the export target.
+	if err := seedDefaultHarness(out, env); err != nil {
+		return err
+	}
+
 	tracked, err := probe.IsClaudeTracked(workspace)
 	if err != nil {
 		return fmt.Errorf("probe workspace: %w", err)
@@ -104,20 +114,79 @@ func runInit(out io.Writer, workspace string) error {
 	return nil
 }
 
-// importBase seeds the _base persona: copies the workspace .claude/ tree and
-// CLAUDE.md into the persona dir and writes a minimal _base persona.toml.
+// seedDefaultHarness detects installed harness binaries, reports them, and sets
+// the workspace default. It prefers the reference harness (claude) when present,
+// otherwise the first detected; if nothing is detected the implicit claude
+// default stands and no value is written.
+func seedDefaultHarness(out io.Writer, env *environment.Environment) error {
+	var detected []string
+	for _, h := range harness.All() {
+		if h.Detect().Installed {
+			detected = append(detected, h.ID())
+		}
+	}
+	if len(detected) > 0 {
+		fmt.Fprintf(out, "  detected: %s\n", strings.Join(detected, ", "))
+	}
+
+	def := ""
+	for _, id := range detected {
+		if id == harness.Default {
+			def = harness.Default
+			break
+		}
+	}
+	if def == "" && len(detected) > 0 {
+		def = detected[0]
+	}
+
+	if def != "" && def != harness.Default {
+		if err := env.SetDefaultHarness(def); err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "  harness: %s (set as default; change with `acon config harness <id>`)\n", def)
+	} else {
+		fmt.Fprintf(out, "  harness: %s (default; change with `acon config harness <id>`)\n", harness.Default)
+	}
+	return nil
+}
+
+// importBase seeds the _base persona from the workspace .claude/ + CLAUDE.md. It
+// materializes the skills, subagents, and MCP config into the persona store AND
+// enumerates them in the manifest, so the baseline is a full, materializable, and
+// exportable persona — the foundation of "containerize my whole Claude setup."
 // The author is taken from env.Author() which was derived at Create time.
 func importBase(env *environment.Environment, workspace string) error {
 	baseDir := filepath.Join(environment.RepoDir(env.Hash), "personas", "_base")
 	if err := os.MkdirAll(baseDir, 0o755); err != nil {
 		return fmt.Errorf("create _base dir: %w", err)
 	}
-
 	srcClaude := filepath.Join(workspace, ".claude")
-	if info, err := os.Stat(srcClaude); err == nil && info.IsDir() {
-		if err := copyTree(srcClaude, filepath.Join(baseDir, ".claude")); err != nil {
-			return fmt.Errorf("import .claude: %w", err)
-		}
+
+	cfg := domain.Config{
+		ClaudeMD:       "CLAUDE.md",
+		SettingSources: []string{"user", "project"},
+		Skills:         domain.SkillSet{Mode: "allowlist"},
+	}
+
+	skills, err := importSkills(srcClaude, baseDir)
+	if err != nil {
+		return err
+	}
+	cfg.Skills.Include = skills
+
+	subs, err := importSubagents(srcClaude, baseDir)
+	if err != nil {
+		return err
+	}
+	cfg.Subagents.Include = subs
+
+	hasMCP, err := importMCP(workspace, srcClaude, baseDir)
+	if err != nil {
+		return err
+	}
+	if hasMCP {
+		cfg.MCP.Config = "mcp.json"
 	}
 
 	srcMD := filepath.Join(workspace, "CLAUDE.md")
@@ -130,16 +199,72 @@ func importBase(env *environment.Environment, workspace string) error {
 	base := domain.Persona{
 		Name:        "_base",
 		Description: "Shared base layer imported from the workspace .claude/ and CLAUDE.md.",
-		Extends:     "",
-		Config: domain.Config{
-			ClaudeMD:       "CLAUDE.md",
-			SettingSources: []string{"user", "project"},
-			Skills:         domain.SkillSet{Mode: "allowlist"},
-		},
+		Config:      cfg,
 		Enforcement: domain.Enforcement{PermissionMode: "default"},
 		Metadata:    domain.Metadata{Version: "0.1.0", Author: env.Author()},
 	}
 	return domain.SavePersonaTOML(base, filepath.Join(baseDir, "persona.toml"))
+}
+
+// importSkills copies each .claude/skills/<name>/ dir into the persona store and
+// returns the sorted skill names for the manifest allowlist.
+func importSkills(srcClaude, baseDir string) ([]string, error) {
+	entries, err := os.ReadDir(filepath.Join(srcClaude, "skills"))
+	if err != nil {
+		return nil, nil // no skills/ -> none
+	}
+	var names []string
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		if err := copyTree(filepath.Join(srcClaude, "skills", e.Name()), filepath.Join(baseDir, "skills", e.Name())); err != nil {
+			return nil, fmt.Errorf("import skill %q: %w", e.Name(), err)
+		}
+		names = append(names, e.Name())
+	}
+	sort.Strings(names)
+	return names, nil
+}
+
+// importSubagents copies each .claude/agents/<name>.md into the persona store and
+// returns the sorted subagent basenames for the manifest.
+func importSubagents(srcClaude, baseDir string) ([]string, error) {
+	entries, err := os.ReadDir(filepath.Join(srcClaude, "agents"))
+	if err != nil {
+		return nil, nil
+	}
+	var names []string
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		if err := copyFile(filepath.Join(srcClaude, "agents", e.Name()), filepath.Join(baseDir, "agents", e.Name())); err != nil {
+			return nil, fmt.Errorf("import subagent %q: %w", e.Name(), err)
+		}
+		names = append(names, strings.TrimSuffix(e.Name(), ".md"))
+	}
+	sort.Strings(names)
+	return names, nil
+}
+
+// importMCP copies the first MCP config it finds (workspace .mcp.json, then the
+// .claude/ variants) into the persona store as mcp.json. Returns whether one was
+// imported.
+func importMCP(workspace, srcClaude, baseDir string) (bool, error) {
+	for _, cand := range []string{
+		filepath.Join(workspace, ".mcp.json"),
+		filepath.Join(srcClaude, ".mcp.json"),
+		filepath.Join(srcClaude, "mcp.json"),
+	} {
+		if _, err := os.Stat(cand); err == nil {
+			if err := copyFile(cand, filepath.Join(baseDir, "mcp.json")); err != nil {
+				return false, fmt.Errorf("import mcp config: %w", err)
+			}
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func copyTree(src, dst string) error {

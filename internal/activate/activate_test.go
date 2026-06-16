@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/a2ngerer/agent-containers/internal/compose"
 	"github.com/a2ngerer/agent-containers/internal/domain"
 	"github.com/a2ngerer/agent-containers/internal/environment"
+	"github.com/a2ngerer/agent-containers/internal/harness"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,10 +73,11 @@ author = "tester"
 func TestActivate_HappyPath(t *testing.T) {
 	e := seedReviewerEnv(t)
 
-	res, err := Activate(e, "reviewer")
+	res, err := Activate(e, "reviewer", "claude")
 	require.NoError(t, err)
-	require.True(t, res.Attestation.Clean)
-	require.Equal(t, environment.CacheDir(e.Hash, "reviewer"), res.ConfigDir)
+	require.True(t, res.Report.Verified)
+	require.Equal(t, "claude", res.Harness)
+	require.Equal(t, environment.CacheDir(e.Hash, "claude", "reviewer"), res.ConfigDir)
 
 	// config dir materialized outside the workspace
 	require.NotContains(t, res.ConfigDir, e.Workspace)
@@ -84,64 +85,46 @@ func TestActivate_HappyPath(t *testing.T) {
 	require.FileExists(t, filepath.Join(res.ConfigDir, "skills", "security-review", "SKILL.md"))
 
 	// withheld narrative includes the non-allowlisted build skill
-	var withheld []string
-	for _, line := range res.Attestation.Withheld {
-		if line.Kind == "skill" {
-			withheld = line.Names
-		}
-	}
-	require.Contains(t, withheld, "writing-plans")
+	require.Contains(t, res.Report.Withheld, "writing-plans")
 
-	// launch is built
+	// launch is built for the Claude binary
 	require.Equal(t, []string{"CLAUDE_CONFIG_DIR=" + res.ConfigDir}, res.Launch.Env)
 	require.Equal(t, "claude", res.Launch.Argv[0])
 
 	// active persona recorded
 	e2, err := environment.Open(e.Workspace)
 	require.NoError(t, err)
-	require.NotNil(t, e2)
+	require.Equal(t, "reviewer", e2.ActivePersona())
 }
 
 func TestActivate_DefaultsToLatestVersion(t *testing.T) {
 	e := seedReviewerEnv(t)
 	// "reviewer" with no :version must resolve and activate without error.
-	_, err := Activate(e, "reviewer")
+	_, err := Activate(e, "reviewer", "claude")
 	require.NoError(t, err)
 }
 
 func TestActivate_NotFound(t *testing.T) {
 	e := seedReviewerEnv(t)
-	_, err := Activate(e, "ghost")
+	_, err := Activate(e, "ghost", "claude")
 	require.Error(t, err)
 }
 
-// TestActivate_FailClosed verifies the fail-closed contract: when Verify
-// detects a mismatch the returned ActivationResult is zero (no ConfigDir,
-// no Launch) and the error wraps domain.ErrVerifyMismatch.
-//
-// Strategy: manipulate the persona's enforcement manifest after Compose so
-// that Materialize writes settings.json with wrong tools, making Verify report
-// a mismatch. We simulate this by injecting a non-allowlisted file directly
-// into the materialized config dir between the Materialize and Verify steps.
-// Since we cannot intercept Activate's internal flow, we instead use the
-// verifyFn indirection exposed for tests.
-//
-// Simpler integration approach: activate once, then swap settings.json with
-// content that has wrong permissions so Verify detects a mismatch on re-run.
-// But Materialize cleans the dir each run, so we instead use a persona
-// variant whose mcp.json expectation will be violated by removing that file
-// from the cache dir after Materialize runs — which also cannot be done from
-// outside. Therefore the test is kept at the contract level: any error from
-// Activate must return a zero ActivationResult, verifying the fail-closed
-// discipline even for non-verify errors.
+func TestActivate_UnknownHarness(t *testing.T) {
+	e := seedReviewerEnv(t)
+	_, err := Activate(e, "reviewer", "does-not-exist-harness")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unknown harness")
+}
+
+// TestActivate_FailClosed_ZeroResultOnError verifies the fail-closed contract:
+// any error path returns a zero ActivationResult (no ConfigDir, no launch).
 func TestActivate_FailClosed_ZeroResultOnError(t *testing.T) {
 	e := seedReviewerEnv(t)
 
-	// Calling with a non-existent persona guarantees an error.
-	res, err := Activate(e, "does-not-exist")
+	res, err := Activate(e, "does-not-exist", "claude")
 	require.Error(t, err)
 
-	// The ActivationResult must be zero — no ConfigDir, no launch.
 	var zero ActivationResult
 	require.Equal(t, zero.ConfigDir, res.ConfigDir,
 		"ConfigDir must be empty on any error path (fail-closed contract)")
@@ -151,34 +134,26 @@ func TestActivate_FailClosed_ZeroResultOnError(t *testing.T) {
 		"Launch.Env must be nil on any error path (fail-closed contract)")
 }
 
-// TestActivate_FailClosed_VerifyMismatch injects an extra file into the
-// persona source skill tree so Materialize copies it into the config dir and
-// Verify finds an unexpected path, returning ErrVerifyMismatch. Activate must
-// not produce a launch spec.
-func TestActivate_FailClosed_VerifyMismatch(t *testing.T) {
+// brokenHarness is a test adapter whose Materialize always fails with a
+// verify-mismatch error, standing in for a drift detected by the Claude adapter.
+type brokenHarness struct{}
+
+func (brokenHarness) ID() string          { return "broken-test" }
+func (brokenHarness) DisplayName() string { return "broken (test)" }
+func (brokenHarness) Materialize(harness.Request) (harness.Report, error) {
+	return harness.Report{}, fmt.Errorf("%w: injected mismatch for test", domain.ErrVerifyMismatch)
+}
+func (brokenHarness) Launch(harness.Request) harness.LaunchSpec { return harness.LaunchSpec{} }
+func (brokenHarness) Detect() harness.Detection                 { return harness.Detection{ID: "broken-test"} }
+
+// TestActivate_FailClosed_MaterializeError asserts that when the target harness
+// Materialize fails (e.g. a drift verify mismatch), Activate fails closed: the
+// error propagates and no launch spec or config dir is produced.
+func TestActivate_FailClosed_MaterializeError(t *testing.T) {
+	harness.Register(brokenHarness{})
 	e := seedReviewerEnv(t)
 
-	// First activation succeeds to establish the environment.
-	_, err := Activate(e, "reviewer")
-	require.NoError(t, err)
-
-	// Inject a file into the allowlisted skill's source tree with a name that
-	// Verify's expectedPaths walk will NOT discover (because it walks the
-	// source tree to build expected). We need a path that WILL be on disk in
-	// configDir but NOT in expected. This means a file that Materialize copies
-	// but expectedPaths misses.
-	//
-	// Since expectedPaths walks the persona source tree, injecting there means
-	// the injected file IS expected. Instead: inject after materialization by
-	// using verifyFn override. Since the package is internal we can set
-	// verifyFn directly in tests.
-	verifyFn = func(_ compose.ResolvedManifest, _, _ string) (domain.Attestation, error) {
-		return domain.Attestation{Clean: false},
-			fmt.Errorf("%w: injected mismatch for test", domain.ErrVerifyMismatch)
-	}
-	t.Cleanup(func() { verifyFn = defaultVerify })
-
-	res, err := Activate(e, "reviewer")
+	res, err := Activate(e, "reviewer", "broken-test")
 	require.Error(t, err)
 	require.ErrorIs(t, err, domain.ErrVerifyMismatch)
 	require.Empty(t, res.ConfigDir, "ConfigDir must be empty on fail-closed path")

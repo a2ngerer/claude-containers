@@ -17,9 +17,10 @@ import (
 
 // EnvConfig is the on-disk representation of env.toml.
 type EnvConfig struct {
-	WorkspacePath string `toml:"workspace_path"`
-	ActivePersona string `toml:"active_persona"`
-	Author        string `toml:"author"` // set at Create via defaultAuthor(); snapshot author
+	WorkspacePath  string `toml:"workspace_path"`
+	ActivePersona  string `toml:"active_persona"`
+	DefaultHarness string `toml:"default_harness"` // workspace default target harness; "" => claude
+	Author         string `toml:"author"`          // set at Create via defaultAuthor(); snapshot author
 }
 
 // Environment binds the tool to one workspace.
@@ -35,6 +36,16 @@ func (e *Environment) Author() string { return e.cfg.Author }
 
 // ActivePersona returns the currently active persona name.
 func (e *Environment) ActivePersona() string { return e.cfg.ActivePersona }
+
+// DefaultHarness returns the workspace's default target harness id ("" if unset,
+// which callers treat as the reference harness).
+func (e *Environment) DefaultHarness() string { return e.cfg.DefaultHarness }
+
+// SetDefaultHarness records the workspace's default target harness in env.toml.
+func (e *Environment) SetDefaultHarness(id string) error {
+	e.cfg.DefaultHarness = id
+	return writeEnvConfig(e.Hash, e.cfg)
+}
 
 // defaultAuthor derives the author identity for a new environment.
 // Priority: git config user.name + <user.email>, then OS user login/name.

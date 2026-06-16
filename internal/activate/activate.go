@@ -1,43 +1,42 @@
+// Package activate orchestrates turning a persona into a runnable agent
+// environment: compose the manifest, materialize it for a target harness behind
+// the harness adapter interface, record the active persona, and build the launch
+// spec. Claude Code is the canonical source harness; other harnesses are export
+// targets reached through the same adapter contract.
 package activate
 
 import (
-	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/a2ngerer/agent-containers/internal/compose"
-	"github.com/a2ngerer/agent-containers/internal/domain"
-	"github.com/a2ngerer/agent-containers/internal/enforce"
 	"github.com/a2ngerer/agent-containers/internal/environment"
-	"github.com/a2ngerer/agent-containers/internal/materialize"
+	"github.com/a2ngerer/agent-containers/internal/harness"
 )
 
-// verifyFn is the verify function used by Activate. It is a package-level
-// variable so tests can override it to simulate ErrVerifyMismatch without
-// having to manipulate on-disk state in ways the normal flow prevents.
-var verifyFn = defaultVerify
-
-func defaultVerify(rm compose.ResolvedManifest, personaDir, destDir string) (domain.Attestation, error) {
-	return enforce.Verify(rm, personaDir, destDir)
-}
-
-// ActivationResult is the outcome of Activate: where the env was materialized,
-// the attestation proving its cleanliness, and the launch spec to run/print.
+// ActivationResult is the outcome of Activate: the target harness, where the env
+// was materialized, the translation/attestation report, and the launch spec.
 type ActivationResult struct {
-	ConfigDir   string
-	Attestation domain.Attestation
-	Launch      LaunchSpec
+	Harness   string
+	ConfigDir string
+	Report    harness.Report
+	Launch    harness.LaunchSpec
 }
 
-// Activate composes a persona, locks the environment, materializes it into the
-// cache config dir, verifies isolation (fail-closed), enriches the attestation,
-// records the active persona, and builds the launch spec. personaRef is "name"
-// or "name:version" (version currently informational; default "latest").
-func Activate(e *environment.Environment, personaRef string) (ActivationResult, error) {
+// Activate composes a persona, locks the environment, materializes it for the
+// target harness into the harness-namespaced cache dir, records the active
+// persona, and builds the launch spec. Materialization is fail-closed: a
+// verification drift (Claude) or translation error aborts before anything is
+// recorded or launched. personaRef is "name" or "name:version" (version
+// currently informational; default "latest").
+func Activate(e *environment.Environment, personaRef, harnessID string) (ActivationResult, error) {
 	name, _ := parsePersonaRef(personaRef)
+
+	h, ok := harness.Get(harnessID)
+	if !ok {
+		return ActivationResult{}, fmt.Errorf("unknown harness %q", harnessID)
+	}
 
 	rm, err := compose.Compose(e, name)
 	if err != nil {
@@ -50,32 +49,57 @@ func Activate(e *environment.Environment, personaRef string) (ActivationResult, 
 	}
 	defer lock.Release()
 
-	configDir := environment.CacheDir(e.Hash, name)
-	if err := materialize.Materialize(e, rm, configDir); err != nil {
-		return ActivationResult{}, fmt.Errorf("materialize %q: %w", name, err)
+	configDir := environment.CacheDir(e.Hash, harnessID, name)
+	req := harness.Request{
+		Manifest:   rm,
+		PersonaDir: filepath.Join(environment.RepoDir(e.Hash), "personas", rm.Persona.Name),
+		DestDir:    configDir,
 	}
 
-	personaDir := filepath.Join(environment.RepoDir(e.Hash), "personas", rm.Persona.Name)
-	att, err := verifyFn(rm, personaDir, configDir)
+	report, err := h.Materialize(req)
 	if err != nil {
-		if errors.Is(err, domain.ErrVerifyMismatch) {
-			// fail closed: do not launch a compromised environment
-			return ActivationResult{}, err
-		}
-		return ActivationResult{}, fmt.Errorf("verify %q: %w", name, err)
+		return ActivationResult{}, fmt.Errorf("materialize %q for %s: %w", name, harnessID, err)
 	}
-
-	att.Withheld = withheldSkills(e, rm)
 
 	if err := e.SetActive(name); err != nil {
 		return ActivationResult{}, fmt.Errorf("set active persona: %w", err)
 	}
 
 	return ActivationResult{
-		ConfigDir:   configDir,
-		Attestation: att,
-		Launch:      BuildLaunch(configDir, rm),
+		Harness:   harnessID,
+		ConfigDir: configDir,
+		Report:    report,
+		Launch:    h.Launch(req),
 	}, nil
+}
+
+// Export materializes a persona for a target harness into an explicit destDir
+// without locking, recording the active persona, or touching the cache. It backs
+// `acon export`: the "containerize my Claude setup and take it to another
+// harness" flow. The returned launch spec is relative to destDir.
+func Export(e *environment.Environment, personaRef, harnessID, destDir string) (harness.Report, harness.LaunchSpec, error) {
+	name, _ := parsePersonaRef(personaRef)
+
+	h, ok := harness.Get(harnessID)
+	if !ok {
+		return harness.Report{}, harness.LaunchSpec{}, fmt.Errorf("unknown harness %q", harnessID)
+	}
+
+	rm, err := compose.Compose(e, name)
+	if err != nil {
+		return harness.Report{}, harness.LaunchSpec{}, err
+	}
+
+	req := harness.Request{
+		Manifest:   rm,
+		PersonaDir: filepath.Join(environment.RepoDir(e.Hash), "personas", rm.Persona.Name),
+		DestDir:    destDir,
+	}
+	report, err := h.Materialize(req)
+	if err != nil {
+		return harness.Report{}, harness.LaunchSpec{}, fmt.Errorf("export %q for %s: %w", name, harnessID, err)
+	}
+	return report, h.Launch(req), nil
 }
 
 // parsePersonaRef splits "name" or "name:version" into its parts. The version
@@ -85,30 +109,4 @@ func parsePersonaRef(ref string) (name, version string) {
 		return ref[:i], ref[i+1:]
 	}
 	return ref, "latest"
-}
-
-// withheldSkills returns the build narrative: skills physically present in the
-// persona repo tree but excluded from the allowlist. This powers the
-// "deliberately removed" line in the attestation.
-func withheldSkills(e *environment.Environment, rm compose.ResolvedManifest) []domain.AttestationLine {
-	skillsDir := filepath.Join(environment.RepoDir(e.Hash), "personas", rm.Persona.Name, "skills")
-	entries, err := os.ReadDir(skillsDir)
-	if err != nil {
-		return nil
-	}
-	allowed := make(map[string]bool, len(rm.Skills))
-	for _, s := range rm.Skills {
-		allowed[s] = true
-	}
-	var withheld []string
-	for _, ent := range entries {
-		if ent.IsDir() && !allowed[ent.Name()] {
-			withheld = append(withheld, ent.Name())
-		}
-	}
-	if len(withheld) == 0 {
-		return nil
-	}
-	sort.Strings(withheld)
-	return []domain.AttestationLine{{Kind: "skill", Names: withheld}}
 }
